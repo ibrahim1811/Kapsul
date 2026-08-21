@@ -1,0 +1,18 @@
+{
+  "name": "@kapsul/api",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@kapsul/types": "*",
+    "@kapsul/firebase": "*"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4"
+  }
+}

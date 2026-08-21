@@ -1,0 +1,14 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "kapsul-storage",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-08-01",
+  "observability": { "enabled": true },
+  "r2_buckets": [
+    { "binding": "BUCKET", "bucket_name": "kapsul-files" }
+  ],
+  "vars": {
+    "FIREBASE_PROJECT_ID": "kapsull",
+    "ALLOWED_ORIGIN": "http://localhost:3101"
+  }
+}

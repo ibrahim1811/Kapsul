@@ -1,0 +1,27 @@
+{
+  "name": "kapsul",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "apps/web",
+    "apps/storage-worker",
+    "apps/ai-worker",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:web": "npm run dev --workspace=apps/web",
+    "build:web": "npm run build --workspace=apps/web",
+    "build:packages": "npm run build --workspace=packages/types && npm run build --workspace=packages/utils && npm run build --workspace=packages/firebase && npm run build --workspace=packages/ai && npm run build --workspace=packages/api",
+    "dev:storage-worker": "npm run dev --workspace=apps/storage-worker",
+    "deploy:storage-worker": "npm run deploy --workspace=apps/storage-worker",
+    "dev:ai-worker": "npm run dev --workspace=apps/ai-worker",
+    "deploy:ai-worker": "npm run deploy --workspace=apps/ai-worker",
+    "deploy:rules": "firebase deploy --only firestore:rules,storage:rules",
+    "test": "npm run test --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4"
+  }
+}
