@@ -1,5 +1,7 @@
 "use client";
 
+export const runtime = "edge";
+
 import { ProtectedRoute } from "@/components/protected-route";
 import { useAuth } from "@/lib/auth-context";
 import { deleteItem, updateItem } from "@/lib/items";
