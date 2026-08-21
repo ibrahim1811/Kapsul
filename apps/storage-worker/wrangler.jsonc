@@ -9,6 +9,6 @@
   ],
   "vars": {
     "FIREBASE_PROJECT_ID": "kapsull",
-    "ALLOWED_ORIGIN": "http://localhost:3101"
+    "ALLOWED_ORIGIN": "https://kapsul-e3p.pages.dev,http://localhost:3101,http://localhost:3000"
   }
 }

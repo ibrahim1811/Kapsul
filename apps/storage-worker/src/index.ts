@@ -20,18 +20,21 @@ async function verifyFirebaseToken(token: string, projectId: string): Promise<st
   return payload.sub;
 }
 
-function corsHeaders(origin: string): HeadersInit {
+function corsHeaders(requestOrigin: string | null, allowedOrigins: string): HeadersInit {
+  const allowed = allowedOrigins.split(",").map((o) => o.trim());
+  const origin = requestOrigin && allowed.includes(requestOrigin) ? requestOrigin : allowed[0];
   return {
     "Access-Control-Allow-Origin": origin,
     "Access-Control-Allow-Methods": "GET, PUT, DELETE, OPTIONS",
     "Access-Control-Allow-Headers": "Authorization, Content-Type",
     "Access-Control-Max-Age": "86400",
+    Vary: "Origin",
   };
 }
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
-    const cors = corsHeaders(env.ALLOWED_ORIGIN);
+    const cors = corsHeaders(request.headers.get("origin"), env.ALLOWED_ORIGIN);
 
     if (request.method === "OPTIONS") {
       return new Response(null, { headers: cors });
