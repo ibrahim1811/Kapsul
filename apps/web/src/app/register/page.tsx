@@ -1,5 +1,6 @@
 "use client";
 
+import { Logo } from "@/components/logo";
 import { authErrorMessage } from "@/lib/auth-errors";
 import { useAuth } from "@/lib/auth-context";
 import { getFirebaseAuth } from "@/lib/firebase";
@@ -41,53 +42,60 @@ export default function RegisterPage() {
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-6 px-4">
-      <div className="w-full max-w-sm space-y-6">
-        <div className="text-center">
-          <h1 className="text-2xl font-semibold">KAPSÜL</h1>
-          <p className="mt-1 text-sm text-neutral-500">Yeni hesap oluştur</p>
+    <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-ink px-4">
+      <div className="pointer-events-none absolute inset-0 bg-radial-glow" />
+      <div className="relative z-10 w-full max-w-sm">
+        <div className="mb-8 flex justify-center">
+          <Logo />
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-3">
-          <input
-            type="text"
-            placeholder="Ad Soyad (opsiyonel)"
-            value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)}
-            className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-500 dark:border-neutral-700 dark:bg-neutral-900"
-          />
-          <input
-            type="email"
-            required
-            placeholder="E-posta"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-500 dark:border-neutral-700 dark:bg-neutral-900"
-          />
-          <input
-            type="password"
-            required
-            minLength={6}
-            placeholder="Şifre (en az 6 karakter)"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-500 dark:border-neutral-700 dark:bg-neutral-900"
-          />
+        <div className="rounded-3xl border border-ink-border bg-ink-panel/80 p-8 shadow-card backdrop-blur-xl">
+          <div className="mb-6 text-center">
+            <h1 className="text-xl font-semibold text-bone">Kapsülüne başla</h1>
+            <p className="mt-1 text-sm text-bone-muted">Yeni hesap oluştur</p>
+          </div>
 
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          <form onSubmit={handleSubmit} className="space-y-3">
+            <input
+              type="text"
+              placeholder="Ad Soyad (opsiyonel)"
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              className="w-full rounded-full border border-ink-border bg-black/30 px-4 py-3 text-sm text-bone placeholder:text-bone-muted outline-none transition-colors focus:border-accent/60"
+            />
+            <input
+              type="email"
+              required
+              placeholder="E-posta"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full rounded-full border border-ink-border bg-black/30 px-4 py-3 text-sm text-bone placeholder:text-bone-muted outline-none transition-colors focus:border-accent/60"
+            />
+            <input
+              type="password"
+              required
+              minLength={6}
+              placeholder="Şifre (en az 6 karakter)"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full rounded-full border border-ink-border bg-black/30 px-4 py-3 text-sm text-bone placeholder:text-bone-muted outline-none transition-colors focus:border-accent/60"
+            />
 
-          <button
-            type="submit"
-            disabled={submitting}
-            className="w-full rounded-md bg-neutral-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-white dark:text-neutral-900"
-          >
-            Kayıt ol
-          </button>
-        </form>
+            {error && <p className="px-2 text-sm text-red-400">{error}</p>}
 
-        <p className="text-center text-sm text-neutral-500">
+            <button
+              type="submit"
+              disabled={submitting}
+              className="w-full rounded-full bg-accent px-4 py-3 text-sm font-semibold text-ink transition-transform hover:scale-[1.01] disabled:opacity-50"
+            >
+              {submitting ? "Oluşturuluyor…" : "Kayıt ol"}
+            </button>
+          </form>
+        </div>
+
+        <p className="mt-6 text-center text-sm text-bone-muted">
           Zaten hesabın var mı?{" "}
-          <Link href="/login" className="font-medium text-neutral-900 underline dark:text-white">
+          <Link href="/login" className="font-medium text-accent hover:underline">
             Giriş yap
           </Link>
         </p>

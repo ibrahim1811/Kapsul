@@ -1,5 +1,6 @@
 "use client";
 
+import { Logo } from "@/components/logo";
 import { ItemCard } from "@/components/item-card";
 import { ProtectedRoute } from "@/components/protected-route";
 import { UploadDropzone } from "@/components/upload-dropzone";
@@ -20,34 +21,56 @@ function Dashboard() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-4xl flex-col gap-6 px-4 py-8">
-      <div className="flex items-center justify-between">
+    <main className="relative min-h-screen bg-ink">
+      <div className="pointer-events-none absolute inset-0 h-[420px] bg-radial-glow" />
+
+      <div className="relative z-10 mx-auto flex max-w-5xl flex-col gap-10 px-4 py-8 sm:px-6">
+        <div className="flex items-center justify-between">
+          <Logo />
+          <div className="flex items-center gap-3">
+            <span className="hidden rounded-full border border-ink-border px-3 py-1.5 text-xs text-bone-muted sm:inline">
+              {user?.displayName || user?.email}
+            </span>
+            <button
+              type="button"
+              onClick={handleSignOut}
+              className="rounded-full border border-ink-border px-4 py-1.5 text-xs font-medium text-bone transition-colors hover:border-white/30"
+            >
+              Çıkış yap
+            </button>
+          </div>
+        </div>
+
         <div>
-          <h1 className="text-2xl font-semibold">KAPSÜL</h1>
-          <p className="text-sm text-neutral-500">{user?.displayName || user?.email}</p>
+          <h1 className="text-3xl font-bold tracking-tight text-bone sm:text-4xl">
+            Aklında ne varsa, <span className="text-accent">bırak</span>.
+          </h1>
+          <p className="mt-2 text-sm text-bone-muted">
+            {loading ? "Yükleniyor…" : `${items.length} öge kapsülünde saklanıyor`}
+          </p>
         </div>
-        <button
-          type="button"
-          onClick={handleSignOut}
-          className="rounded-md border border-neutral-300 px-3 py-2 text-sm font-medium dark:border-neutral-700"
-        >
-          Çıkış yap
-        </button>
+
+        {user && <UploadDropzone userId={user.uid} />}
+
+        {loading ? (
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="h-32 animate-pulse rounded-2xl border border-ink-border bg-ink-panel/40" />
+            ))}
+          </div>
+        ) : items.length === 0 ? (
+          <div className="flex flex-col items-center gap-2 rounded-3xl border border-dashed border-ink-border py-16 text-center">
+            <p className="text-sm font-medium text-bone">Henüz öge yok</p>
+            <p className="text-xs text-bone-muted">Bir dosya yükleyerek kapsülünü doldurmaya başla.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
+            {items.map((item) => (
+              <ItemCard key={item.id} item={item} />
+            ))}
+          </div>
+        )}
       </div>
-
-      {user && <UploadDropzone userId={user.uid} />}
-
-      {loading ? (
-        <p className="text-sm text-neutral-500">Yükleniyor...</p>
-      ) : items.length === 0 ? (
-        <p className="text-sm text-neutral-500">Henüz öge yok. Bir dosya yükleyerek başla.</p>
-      ) : (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
-          {items.map((item) => (
-            <ItemCard key={item.id} item={item} />
-          ))}
-        </div>
-      )}
     </main>
   );
 }

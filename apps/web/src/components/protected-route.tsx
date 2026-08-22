@@ -16,8 +16,8 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (loading || !user) {
     return (
-      <main className="flex min-h-screen items-center justify-center">
-        <p className="text-sm text-neutral-500">Yükleniyor...</p>
+      <main className="flex min-h-screen items-center justify-center bg-ink">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-ink-border border-t-accent" />
       </main>
     );
   }

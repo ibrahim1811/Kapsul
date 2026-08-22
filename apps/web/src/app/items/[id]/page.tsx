@@ -11,6 +11,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
+const STATUS_LABEL: Record<string, string> = {
+  pending: "Bekliyor",
+  processing: "İşleniyor",
+  completed: "Hazır",
+  failed: "Başarısız",
+};
+
 function ItemDetail({ itemId }: { itemId: string }) {
   const { user } = useAuth();
   const router = useRouter();
@@ -31,17 +38,19 @@ function ItemDetail({ itemId }: { itemId: string }) {
 
   if (item === undefined) {
     return (
-      <main className="flex min-h-screen items-center justify-center">
-        <p className="text-sm text-neutral-500">Yükleniyor...</p>
+      <main className="flex min-h-screen items-center justify-center bg-ink">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-ink-border border-t-accent" />
       </main>
     );
   }
 
   if (item === null || !user) {
     return (
-      <main className="flex min-h-screen flex-col items-center justify-center gap-3">
-        <p className="text-sm text-neutral-500">Öge bulunamadı.</p>
-        <Link href="/" className="text-sm underline">Geri dön</Link>
+      <main className="flex min-h-screen flex-col items-center justify-center gap-3 bg-ink">
+        <p className="text-sm text-bone-muted">Öge bulunamadı.</p>
+        <Link href="/" className="text-sm text-accent hover:underline">
+          Geri dön
+        </Link>
       </main>
     );
   }
@@ -89,75 +98,83 @@ function ItemDetail({ itemId }: { itemId: string }) {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-2xl flex-col gap-4 px-4 py-8">
-      <Link href="/" className="text-sm text-neutral-500 underline">
-        ← Geri
-      </Link>
+    <main className="relative min-h-screen bg-ink">
+      <div className="pointer-events-none absolute inset-0 h-[320px] bg-radial-glow" />
 
-      <input
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        className="w-full rounded-md border border-neutral-300 px-3 py-2 text-xl font-semibold outline-none focus:border-neutral-500 dark:border-neutral-700 dark:bg-neutral-900"
-      />
+      <div className="relative z-10 mx-auto flex max-w-2xl flex-col gap-6 px-4 py-8 sm:px-6">
+        <Link href="/" className="w-fit text-sm text-bone-muted transition-colors hover:text-accent">
+          ← Kapsüle dön
+        </Link>
 
-      <div className="flex flex-wrap items-center gap-2 text-xs text-neutral-500">
-        <span className="rounded-full bg-neutral-100 px-2 py-0.5 dark:bg-neutral-800">{item.type}</span>
-        <span>{item.processingStatus}</span>
-        {item.originalFileName && <span>{item.originalFileName}</span>}
-      </div>
+        <div className="rounded-3xl border border-ink-border bg-ink-panel/60 p-6 shadow-card backdrop-blur-sm">
+          <input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="w-full bg-transparent text-2xl font-semibold text-bone outline-none placeholder:text-bone-muted"
+          />
 
-      <label className="text-sm font-medium">Etiketler</label>
-      <input
-        value={tagsInput}
-        onChange={(e) => setTagsInput(e.target.value)}
-        placeholder="etiket1, etiket2"
-        className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-500 dark:border-neutral-700 dark:bg-neutral-900"
-      />
+          <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-bone-muted">
+            <span className="rounded-full bg-white/5 px-2.5 py-1 text-bone">{item.type}</span>
+            <span className="rounded-full bg-accent/15 px-2.5 py-1 text-accent">
+              {STATUS_LABEL[item.processingStatus] ?? item.processingStatus}
+            </span>
+            {item.originalFileName && <span className="truncate">{item.originalFileName}</span>}
+          </div>
 
-      <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={handleSave}
-          disabled={saving}
-          className="rounded-md bg-neutral-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-white dark:text-neutral-900"
-        >
-          Kaydet
-        </button>
-        <button
-          type="button"
-          onClick={handleDelete}
-          disabled={deleting}
-          className="rounded-md border border-red-300 px-3 py-2 text-sm font-medium text-red-600 disabled:opacity-50 dark:border-red-900"
-        >
-          Sil
-        </button>
-        {item.originalFileName && (
-          <button
-            type="button"
-            onClick={handleDownload}
-            disabled={downloading}
-            className="rounded-md border border-neutral-300 px-3 py-2 text-sm font-medium disabled:opacity-50 dark:border-neutral-700"
-          >
-            İndir
-          </button>
+          <label className="mt-5 block text-xs font-medium text-bone-muted">Etiketler</label>
+          <input
+            value={tagsInput}
+            onChange={(e) => setTagsInput(e.target.value)}
+            placeholder="etiket1, etiket2"
+            className="mt-1.5 w-full rounded-full border border-ink-border bg-black/30 px-4 py-2.5 text-sm text-bone placeholder:text-bone-muted outline-none transition-colors focus:border-accent/60"
+          />
+
+          <div className="mt-5 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={saving}
+              className="rounded-full bg-accent px-4 py-2 text-sm font-semibold text-ink transition-transform hover:scale-[1.02] disabled:opacity-50"
+            >
+              {saving ? "Kaydediliyor…" : "Kaydet"}
+            </button>
+            {item.originalFileName && (
+              <button
+                type="button"
+                onClick={handleDownload}
+                disabled={downloading}
+                className="rounded-full border border-ink-border px-4 py-2 text-sm font-medium text-bone transition-colors hover:border-white/30 disabled:opacity-50"
+              >
+                {downloading ? "İndiriliyor…" : "İndir"}
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={handleDelete}
+              disabled={deleting}
+              className="rounded-full border border-red-500/30 px-4 py-2 text-sm font-medium text-red-400 transition-colors hover:border-red-500/60 disabled:opacity-50"
+            >
+              {deleting ? "Siliniyor…" : "Sil"}
+            </button>
+          </div>
+        </div>
+
+        {item.summary && (
+          <div className="rounded-3xl border border-ink-border bg-ink-panel/60 p-6 backdrop-blur-sm">
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-bone-muted">Özet</h2>
+            <p className="mt-2 text-sm leading-relaxed text-bone">{item.summary}</p>
+          </div>
+        )}
+
+        {item.extractedText && (
+          <div className="rounded-3xl border border-ink-border bg-ink-panel/60 p-6 backdrop-blur-sm">
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-bone-muted">İçerik</h2>
+            <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-bone-muted">
+              {item.extractedText}
+            </p>
+          </div>
         )}
       </div>
-
-      {item.summary && (
-        <div>
-          <h2 className="text-sm font-medium">Özet</h2>
-          <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">{item.summary}</p>
-        </div>
-      )}
-
-      {item.extractedText && (
-        <div>
-          <h2 className="text-sm font-medium">İçerik</h2>
-          <p className="mt-1 whitespace-pre-wrap text-sm text-neutral-600 dark:text-neutral-400">
-            {item.extractedText}
-          </p>
-        </div>
-      )}
     </main>
   );
 }

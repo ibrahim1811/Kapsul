@@ -15,34 +15,39 @@ const TYPE_ICON: Record<Item["type"], string> = {
 const STATUS_LABEL: Record<Item["processingStatus"], string> = {
   pending: "Bekliyor",
   processing: "İşleniyor",
-  completed: "Tamamlandı",
+  completed: "Hazır",
   failed: "Başarısız",
+};
+
+const STATUS_CLASS: Record<Item["processingStatus"], string> = {
+  pending: "bg-white/5 text-bone-muted",
+  processing: "bg-accent/10 text-accent animate-pulse",
+  completed: "bg-accent/15 text-accent",
+  failed: "bg-red-500/10 text-red-400",
 };
 
 export function ItemCard({ item }: { item: Item }) {
   return (
     <Link
       href={`/items/${item.id}`}
-      className="flex flex-col gap-2 rounded-lg border border-neutral-200 p-4 transition-colors hover:border-neutral-400 dark:border-neutral-800 dark:hover:border-neutral-600"
+      className="group flex flex-col gap-3 rounded-2xl border border-ink-border bg-ink-panel/60 p-4 shadow-card backdrop-blur-sm transition-all hover:-translate-y-0.5 hover:border-accent/40"
     >
-      <div className="flex items-center gap-2">
-        <span className="text-xl">{TYPE_ICON[item.type]}</span>
-        <span className="truncate text-sm font-medium">{item.title}</span>
+      <div className="flex items-center justify-between">
+        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/5 text-base">
+          {TYPE_ICON[item.type]}
+        </span>
+        <span
+          className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${STATUS_CLASS[item.processingStatus]}`}
+        >
+          {STATUS_LABEL[item.processingStatus]}
+        </span>
       </div>
-      {item.summary && (
-        <p className="line-clamp-2 text-xs text-neutral-500">{item.summary}</p>
-      )}
-      <span
-        className={`w-fit rounded-full px-2 py-0.5 text-[11px] ${
-          item.processingStatus === "failed"
-            ? "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400"
-            : item.processingStatus === "completed"
-              ? "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400"
-              : "bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400"
-        }`}
-      >
-        {STATUS_LABEL[item.processingStatus]}
-      </span>
+      <div>
+        <p className="truncate text-sm font-medium text-bone">{item.title}</p>
+        {item.summary && (
+          <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-bone-muted">{item.summary}</p>
+        )}
+      </div>
     </Link>
   );
 }

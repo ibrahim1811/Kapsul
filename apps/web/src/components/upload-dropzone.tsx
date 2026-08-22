@@ -48,14 +48,17 @@ export function UploadDropzone({ userId }: { userId: string }) {
           handleFiles(e.dataTransfer.files);
         }}
         onClick={() => inputRef.current?.click()}
-        className={`flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed px-6 py-10 text-center transition-colors ${
+        className={`flex cursor-pointer flex-col items-center justify-center gap-2 rounded-3xl border border-dashed px-6 py-12 text-center backdrop-blur-sm transition-all ${
           dragging
-            ? "border-neutral-900 bg-neutral-50 dark:border-white dark:bg-neutral-900"
-            : "border-neutral-300 dark:border-neutral-700"
+            ? "border-accent bg-accent/5 shadow-glow"
+            : "border-ink-border bg-ink-panel/40 hover:border-white/20"
         }`}
       >
-        <p className="text-sm font-medium">Dosyaları buraya sürükle veya tıkla</p>
-        <p className="mt-1 text-xs text-neutral-500">PDF, görsel, ses, video, belge — maks 25MB</p>
+        <span className="flex h-11 w-11 items-center justify-center rounded-full bg-accent/10 text-lg text-accent">
+          ↑
+        </span>
+        <p className="text-sm font-medium text-bone">Dosyaları buraya sürükle ya da tıkla</p>
+        <p className="text-xs text-bone-muted">PDF, görsel, ses, video, belge — maks 25MB</p>
         <input
           ref={inputRef}
           type="file"
@@ -71,17 +74,17 @@ export function UploadDropzone({ userId }: { userId: string }) {
       {uploads.length > 0 && (
         <ul className="mt-3 space-y-2">
           {uploads.map((u) => (
-            <li key={u.fileName} className="text-xs">
+            <li key={u.fileName} className="rounded-2xl border border-ink-border bg-ink-panel/60 px-4 py-2.5 text-xs">
               <div className="flex justify-between">
-                <span className="truncate">{u.fileName}</span>
-                <span className={u.error ? "text-red-600" : "text-neutral-500"}>
+                <span className="truncate text-bone">{u.fileName}</span>
+                <span className={u.error ? "text-red-400" : "text-bone-muted"}>
                   {u.error ?? `${u.progress}%`}
                 </span>
               </div>
               {!u.error && (
-                <div className="mt-1 h-1 w-full rounded bg-neutral-200 dark:bg-neutral-800">
+                <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-white/5">
                   <div
-                    className="h-1 rounded bg-neutral-900 dark:bg-white"
+                    className="h-1 rounded-full bg-accent transition-all"
                     style={{ width: `${u.progress}%` }}
                   />
                 </div>
