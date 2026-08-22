@@ -11,6 +11,10 @@ type ExtractableItem = Pick<Item, "type" | "storagePath" | "originalFileName" | 
 const VISION_MODEL = "qwen/qwen3.6-27b";
 const AUDIO_MODEL = "whisper-large-v3-turbo";
 
+function stripThinking(text: string): string {
+  return text.replace(/<think>[\s\S]*?<\/think>/gi, "").trim();
+}
+
 function bytesToBase64(bytes: Uint8Array): string {
   let binary = "";
   const chunkSize = 0x8000;
@@ -84,7 +88,7 @@ async function extractImage(item: ExtractableItem, bucket: R2Bucket, groqApiKey:
     temperature: 0.2,
   });
 
-  return { text: completion.choices[0]?.message?.content ?? "" };
+  return { text: stripThinking(completion.choices[0]?.message?.content ?? "") };
 }
 
 async function extractAudio(item: ExtractableItem, bucket: R2Bucket, groqApiKey: string): Promise<ExtractResult> {

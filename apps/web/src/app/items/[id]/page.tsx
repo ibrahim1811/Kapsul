@@ -25,6 +25,8 @@ const STATUS_CLASS: Record<string, string> = {
   failed: "bg-red-500/10 text-red-400",
 };
 
+const PREVIEWABLE_TYPES = new Set(["image", "pdf", "audio", "video"]);
+
 function ItemDetail({ itemId }: { itemId: string }) {
   const { user } = useAuth();
   const router = useRouter();
@@ -35,6 +37,8 @@ function ItemDetail({ itemId }: { itemId: string }) {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewError, setPreviewError] = useState(false);
 
   useEffect(() => {
     if (item) {
@@ -42,6 +46,28 @@ function ItemDetail({ itemId }: { itemId: string }) {
       setTagsInput(item.tags.join(", "));
     }
   }, [item]);
+
+  useEffect(() => {
+    if (!user || !item?.originalFileName || !PREVIEWABLE_TYPES.has(item.type)) return;
+
+    let objectUrl: string | null = null;
+    let cancelled = false;
+    downloadFile(user.uid, itemId, item.originalFileName)
+      .then((blob) => {
+        if (cancelled) return;
+        objectUrl = URL.createObjectURL(blob);
+        setPreviewUrl(objectUrl);
+      })
+      .catch(() => {
+        if (!cancelled) setPreviewError(true);
+      });
+
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, itemId, item?.originalFileName, item?.type]);
 
   if (item === undefined) {
     return (
@@ -171,6 +197,27 @@ function ItemDetail({ itemId }: { itemId: string }) {
             </button>
           </div>
         </div>
+
+        {PREVIEWABLE_TYPES.has(item.type) && item.originalFileName && (
+          <div className="overflow-hidden rounded-3xl border border-ink-border bg-ink-panel/60 backdrop-blur-sm">
+            {previewError ? (
+              <p className="p-6 text-sm text-bone-muted">Önizleme yüklenemedi.</p>
+            ) : !previewUrl ? (
+              <div className="flex h-48 items-center justify-center">
+                <div className="h-6 w-6 animate-spin rounded-full border-2 border-ink-border border-t-accent" />
+              </div>
+            ) : item.type === "image" ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={previewUrl} alt={item.title} className="max-h-[70vh] w-full object-contain" />
+            ) : item.type === "pdf" ? (
+              <iframe src={previewUrl} title={item.title} className="h-[70vh] w-full" />
+            ) : item.type === "audio" ? (
+              <audio src={previewUrl} controls className="w-full p-6" />
+            ) : (
+              <video src={previewUrl} controls className="max-h-[70vh] w-full" />
+            )}
+          </div>
+        )}
 
         {item.summary && (
           <div className="rounded-3xl border border-ink-border bg-ink-panel/60 p-6 backdrop-blur-sm">
