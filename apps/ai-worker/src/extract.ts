@@ -8,7 +8,7 @@ type ExtractableItem = Pick<Item, "type" | "storagePath" | "originalFileName" | 
 
 // Groq'un görsel/ses destekli model isimleri zaman içinde değişebilir; hata alırsan
 // güncel model listesini console.groq.com/docs/models üzerinden kontrol et.
-const VISION_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct";
+const VISION_MODEL = "qwen/qwen3.6-27b";
 const AUDIO_MODEL = "whisper-large-v3-turbo";
 
 function bytesToBase64(bytes: Uint8Array): string {

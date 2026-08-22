@@ -18,6 +18,13 @@ const STATUS_LABEL: Record<string, string> = {
   failed: "Başarısız",
 };
 
+const STATUS_CLASS: Record<string, string> = {
+  pending: "bg-white/5 text-bone-muted",
+  processing: "bg-accent/10 text-accent",
+  completed: "bg-accent/15 text-accent",
+  failed: "bg-red-500/10 text-red-400",
+};
+
 function ItemDetail({ itemId }: { itemId: string }) {
   const { user } = useAuth();
   const router = useRouter();
@@ -115,11 +122,17 @@ function ItemDetail({ itemId }: { itemId: string }) {
 
           <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-bone-muted">
             <span className="rounded-full bg-white/5 px-2.5 py-1 text-bone">{item.type}</span>
-            <span className="rounded-full bg-accent/15 px-2.5 py-1 text-accent">
+            <span className={`rounded-full px-2.5 py-1 ${STATUS_CLASS[item.processingStatus] ?? "bg-white/5 text-bone-muted"}`}>
               {STATUS_LABEL[item.processingStatus] ?? item.processingStatus}
             </span>
             {item.originalFileName && <span className="truncate">{item.originalFileName}</span>}
           </div>
+
+          {item.processingStatus === "failed" && item.processingError && (
+            <p className="mt-3 rounded-2xl border border-red-500/20 bg-red-500/5 px-3 py-2 text-xs text-red-400">
+              {item.processingError}
+            </p>
+          )}
 
           <label className="mt-5 block text-xs font-medium text-bone-muted">Etiketler</label>
           <input
