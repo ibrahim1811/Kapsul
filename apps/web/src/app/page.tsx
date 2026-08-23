@@ -88,8 +88,10 @@ function Dashboard() {
         onSignOut={handleSignOut}
       />
 
-      <main className="relative min-h-screen flex-1">
-        <div className="pointer-events-none absolute inset-0 h-[320px] bg-radial-glow" />
+      <main className="relative min-h-screen flex-1 overflow-hidden">
+        <div className="pointer-events-none absolute inset-0 bg-grain" />
+        <div className="pointer-events-none absolute inset-0 h-[480px] bg-radial-glow" />
+        <div className="pointer-events-none absolute -bottom-40 -left-40 h-96 w-96 rounded-full bg-accent/5 blur-[120px]" />
 
         <div className="relative z-10 mx-auto flex max-w-5xl flex-col gap-6 px-4 py-8 sm:px-6">
           {!loading && items.length === 0 ? (
@@ -104,12 +106,12 @@ function Dashboard() {
             </>
           ) : (
             <>
-              <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center justify-between gap-3 border-b border-ink-border pb-5">
                 <div>
-                  <h1 className="text-xl font-semibold text-bone">
+                  <h1 className="text-xl font-semibold tracking-tight text-bone">
                     {activeCollectionName ?? "Tüm Ögeler"}
                   </h1>
-                  <p className="text-xs text-bone-muted">
+                  <p className="mt-0.5 text-xs text-bone-muted">
                     {loading ? "Yükleniyor…" : `${scopedItems.length} öge`}
                   </p>
                 </div>
