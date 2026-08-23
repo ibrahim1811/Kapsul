@@ -54,10 +54,10 @@ export class GroqProvider implements AIProvider {
     this.client = new Groq({ apiKey });
   }
 
-  async analyzeContent(text: string): Promise<AIAnalysisResult> {
+  async analyzeContent(text: string, existingTags: string[] = []): Promise<AIAnalysisResult> {
     const completion = await this.client.chat.completions.create({
       model: DEFAULT_MODEL,
-      messages: [{ role: "user", content: buildAnalyzeItemPrompt(text) }],
+      messages: [{ role: "user", content: buildAnalyzeItemPrompt(text, existingTags) }],
       response_format: { type: "json_object" },
       temperature: 0.2,
     });

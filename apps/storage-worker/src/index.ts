@@ -46,7 +46,7 @@ export default {
       return new Response("Not found", { status: 404, headers: cors });
     }
     const [, userId, rest] = match;
-    const key = `users/${userId}/files/${rest}`;
+    const key = `users/${userId}/files/${decodeURIComponent(rest)}`;
 
     const token = (request.headers.get("authorization") ?? "").replace(/^Bearer /, "");
     if (!token) {

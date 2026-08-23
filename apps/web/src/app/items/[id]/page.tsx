@@ -33,7 +33,6 @@ function ItemDetail({ itemId }: { itemId: string }) {
   const item = useItem(user?.uid, itemId);
 
   const [title, setTitle] = useState("");
-  const [tagsInput, setTagsInput] = useState("");
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [downloading, setDownloading] = useState(false);
@@ -43,7 +42,6 @@ function ItemDetail({ itemId }: { itemId: string }) {
   useEffect(() => {
     if (item) {
       setTitle(item.title);
-      setTagsInput(item.tags.join(", "));
     }
   }, [item]);
 
@@ -92,11 +90,7 @@ function ItemDetail({ itemId }: { itemId: string }) {
     if (!user) return;
     setSaving(true);
     try {
-      const tags = tagsInput
-        .split(",")
-        .map((t) => t.trim())
-        .filter(Boolean);
-      await updateItem(user.uid, itemId, { title: title.trim() || item!.title, tags });
+      await updateItem(user.uid, itemId, { title: title.trim() || item!.title });
     } finally {
       setSaving(false);
     }
@@ -160,13 +154,21 @@ function ItemDetail({ itemId }: { itemId: string }) {
             </p>
           )}
 
-          <label className="mt-5 block text-xs font-medium text-bone-muted">Etiketler</label>
-          <input
-            value={tagsInput}
-            onChange={(e) => setTagsInput(e.target.value)}
-            placeholder="etiket1, etiket2"
-            className="mt-1.5 w-full rounded-full border border-ink-border bg-black/30 px-4 py-2.5 text-sm text-bone placeholder:text-bone-muted outline-none transition-colors focus:border-accent/60"
-          />
+          {item.tags.length > 0 && (
+            <>
+              <label className="mt-5 block text-xs font-medium text-bone-muted">Etiketler</label>
+              <div className="mt-1.5 flex flex-wrap gap-1.5">
+                {item.tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="rounded-full border border-ink-border bg-black/30 px-3 py-1 text-xs text-bone-muted"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </>
+          )}
 
           <div className="mt-5 flex flex-wrap gap-2">
             <button

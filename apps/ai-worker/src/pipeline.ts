@@ -52,7 +52,8 @@ export async function runAnalysis(
   await fs.updateItem(userId, itemId, { aiStatus: "processing" });
 
   try {
-    const analysis = await new GroqProvider(groqApiKey).analyzeContent(item.extractedText);
+    const existingTags = await fs.listAllTags(userId);
+    const analysis = await new GroqProvider(groqApiKey).analyzeContent(item.extractedText, existingTags);
     const metadata: ItemMetadata = {
       ...item.metadata,
       language: analysis.language || undefined,
@@ -63,10 +64,11 @@ export async function runAnalysis(
       amounts: analysis.amounts,
       actionItems: analysis.actionItems,
     };
+    const tags = Array.from(new Set(analysis.tags.map((t) => t.trim()).filter(Boolean)));
     await fs.updateItem(userId, itemId, {
       summary: analysis.summary || undefined,
       category: analysis.category || undefined,
-      tags: Array.from(new Set([...(item.tags ?? []), ...analysis.tags])),
+      tags,
       metadata,
       aiStatus: "completed",
     });

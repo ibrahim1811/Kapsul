@@ -1,5 +1,5 @@
 import { SignJWT, importPKCS8 } from "jose";
-import { itemsCollectionPath } from "@kapsul/api";
+import { itemsCollectionPath, userDocPath } from "@kapsul/api";
 import type { Item } from "@kapsul/types";
 
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
@@ -123,5 +123,31 @@ export class FirestoreClient {
       body: JSON.stringify({ fields: toFields(withTimestamp) }),
     });
     if (!res.ok) throw new Error(`Firestore güncelleme hatası (${res.status}): ${await res.text()}`);
+  }
+
+  /** Kullanıcının tüm öğelerindeki etiketleri toplayıp tekilleştirir (AI'ın var olan etiketleri tercih etmesi için). */
+  async listAllTags(userId: string): Promise<string[]> {
+    const res = await fetch(`${this.baseUrl()}/${userDocPath(userId)}:runQuery`, {
+      method: "POST",
+      headers: { ...(await this.authHeader()), "Content-Type": "application/json" },
+      body: JSON.stringify({
+        structuredQuery: {
+          select: { fields: [{ fieldPath: "tags" }] },
+          from: [{ collectionId: "items" }],
+        },
+      }),
+    });
+    if (!res.ok) throw new Error(`Firestore sorgu hatası (${res.status}): ${await res.text()}`);
+    const rows = (await res.json()) as Array<{ document?: { fields?: Record<string, FirestoreValue> } }>;
+
+    const tags = new Set<string>();
+    for (const row of rows) {
+      const raw = row.document?.fields?.tags;
+      if (!raw) continue;
+      for (const t of fromValue(raw) as unknown[]) {
+        if (typeof t === "string" && t.trim()) tags.add(t.trim());
+      }
+    }
+    return Array.from(tags);
   }
 }
