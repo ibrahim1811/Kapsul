@@ -31,7 +31,7 @@ function TagChip({
     <button
       type="button"
       onClick={onClick}
-      className={`shrink-0 rounded-md border border-dashed px-2.5 py-1 text-[11px] font-medium transition-colors ${
+      className={`shrink-0 rounded-md border border-dashed px-2 py-0.5 text-[10px] font-medium transition-colors ${
         active
           ? "border-accent/60 bg-accent/10 text-accent"
           : "border-ink-border/70 text-bone-muted/80 hover:border-white/30 hover:text-bone-muted"
@@ -55,7 +55,7 @@ function Pill({
     <button
       type="button"
       onClick={onClick}
-      className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+      className={`shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors ${
         active
           ? "border-accent/60 bg-accent/15 text-accent"
           : "border-ink-border text-bone-muted hover:border-white/30 hover:text-bone"
@@ -97,7 +97,7 @@ export function ItemFilters({
         value={query}
         onChange={(e) => onQueryChange(e.target.value)}
         placeholder="Başlık ya da etikette ara…"
-        className="w-full rounded-full border border-ink-border bg-black/30 px-4 py-2.5 text-sm text-bone placeholder:text-bone-muted outline-none transition-colors focus:border-accent/60"
+        className="w-full rounded-full border border-ink-border bg-black/30 px-3.5 py-2 text-xs text-bone placeholder:text-bone-muted outline-none transition-colors focus:border-accent/60"
       />
 
       {(types.length > 0 || statuses.length > 0) && (
