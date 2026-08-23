@@ -2,7 +2,7 @@ import { getFirebaseFirestore } from "@/lib/firebase";
 import { userDocPath } from "@kapsul/api";
 import type { UserProfile } from "@kapsul/types";
 import { type User } from "firebase/auth";
-import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
+import { doc, getDoc, serverTimestamp, setDoc, updateDoc } from "firebase/firestore";
 
 export async function ensureUserProfile(user: User): Promise<void> {
   const ref = doc(getFirebaseFirestore(), userDocPath(user.uid));
@@ -23,4 +23,12 @@ export async function ensureUserProfile(user: User): Promise<void> {
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
+}
+
+export async function updateUserProfile(
+  userId: string,
+  patch: Partial<Pick<UserProfile, "localePreference" | "themePreference" | "autoFolderEnabled">>
+): Promise<void> {
+  const ref = doc(getFirebaseFirestore(), userDocPath(userId));
+  await updateDoc(ref, { ...patch, updatedAt: serverTimestamp() });
 }

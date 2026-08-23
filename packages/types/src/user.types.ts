@@ -10,6 +10,7 @@ export type UserProfile = {
   photoURL?: string;
   themePreference: ThemePreference;
   localePreference: LocalePreference;
+  autoFolderEnabled?: boolean;
   createdAt: FirestoreTimestamp;
   updatedAt: FirestoreTimestamp;
 };

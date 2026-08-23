@@ -150,4 +150,44 @@ export class FirestoreClient {
     }
     return Array.from(tags);
   }
+
+  /** Kullanıcının klasörlerini (id + ad) döner. */
+  async listCollections(userId: string): Promise<Array<{ id: string; name: string }>> {
+    const res = await fetch(`${this.baseUrl()}/${userDocPath(userId)}:runQuery`, {
+      method: "POST",
+      headers: { ...(await this.authHeader()), "Content-Type": "application/json" },
+      body: JSON.stringify({
+        structuredQuery: {
+          select: { fields: [{ fieldPath: "name" }] },
+          from: [{ collectionId: "collections" }],
+        },
+      }),
+    });
+    if (!res.ok) throw new Error(`Firestore sorgu hatası (${res.status}): ${await res.text()}`);
+    const rows = (await res.json()) as Array<{
+      document?: { name?: string; fields?: Record<string, FirestoreValue> };
+    }>;
+
+    return rows
+      .filter((row) => row.document)
+      .map((row) => {
+        const id = row.document!.name!.split("/").pop()!;
+        const name = fromValue(row.document!.fields?.name) as string | undefined;
+        return { id, name: name ?? "" };
+      })
+      .filter((c) => c.name);
+  }
+
+  /** Kullanıcının profil belgesini (users/{userId}) okur. */
+  async getUserProfile(userId: string): Promise<Record<string, unknown> | undefined> {
+    const res = await fetch(`${this.baseUrl()}/${userDocPath(userId)}`, {
+      headers: await this.authHeader(),
+    });
+    if (res.status === 404) return undefined;
+    if (!res.ok) throw new Error(`Firestore okuma hatası (${res.status}): ${await res.text()}`);
+    const doc = (await res.json()) as { fields?: Record<string, FirestoreValue> };
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(doc.fields ?? {})) out[k] = fromValue(v);
+    return out;
+  }
 }

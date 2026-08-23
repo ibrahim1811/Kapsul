@@ -12,6 +12,7 @@ const EMPTY_ANALYSIS: AIAnalysisResult = {
   summary: "",
   category: "",
   tags: [],
+  folder: "",
   language: "",
   dates: [],
   people: [],
@@ -33,6 +34,7 @@ function parseAnalysisJson(raw: string): AIAnalysisResult {
       summary: typeof parsed.summary === "string" ? parsed.summary : "",
       category: typeof parsed.category === "string" ? parsed.category : "",
       tags: Array.isArray(parsed.tags) ? parsed.tags.filter((t: unknown) => typeof t === "string") : [],
+      folder: typeof parsed.folder === "string" ? parsed.folder : "",
       language: typeof parsed.language === "string" ? parsed.language : "",
       dates: Array.isArray(parsed.dates) ? parsed.dates : [],
       people: Array.isArray(parsed.people) ? parsed.people : [],
@@ -55,10 +57,16 @@ export class GroqProvider implements AIProvider {
     this.client = new Groq({ apiKey });
   }
 
-  async analyzeContent(text: string, existingTags: string[] = []): Promise<AIAnalysisResult> {
+  async analyzeContent(
+    text: string,
+    existingTags: string[] = [],
+    existingFolders: string[] = []
+  ): Promise<AIAnalysisResult> {
     const completion = await this.client.chat.completions.create({
       model: DEFAULT_MODEL,
-      messages: [{ role: "user", content: buildAnalyzeItemPrompt(text, existingTags) }],
+      messages: [
+        { role: "user", content: buildAnalyzeItemPrompt(text, existingTags, existingFolders) },
+      ],
       response_format: { type: "json_object" },
       temperature: 0.2,
       max_completion_tokens: 4096,

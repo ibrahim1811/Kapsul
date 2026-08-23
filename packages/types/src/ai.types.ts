@@ -3,6 +3,7 @@ export type AIAnalysisResult = {
   summary: string;
   category: string;
   tags: string[];
+  folder: string;
   language: string;
   dates: string[];
   people: string[];

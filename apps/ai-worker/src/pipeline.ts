@@ -52,8 +52,18 @@ export async function runAnalysis(
   await fs.updateItem(userId, itemId, { aiStatus: "processing" });
 
   try {
-    const existingTags = await fs.listAllTags(userId);
-    const analysis = await new GroqProvider(groqApiKey).analyzeContent(item.extractedText, existingTags);
+    const [existingTags, profile] = await Promise.all([
+      fs.listAllTags(userId),
+      fs.getUserProfile(userId),
+    ]);
+    const autoFolderEnabled = profile?.autoFolderEnabled === true;
+    const folders = autoFolderEnabled ? await fs.listCollections(userId) : [];
+
+    const analysis = await new GroqProvider(groqApiKey).analyzeContent(
+      item.extractedText,
+      existingTags,
+      folders.map((f) => f.name)
+    );
     const metadata: ItemMetadata = {
       ...item.metadata,
       language: analysis.language || undefined,
@@ -65,12 +75,17 @@ export async function runAnalysis(
       actionItems: analysis.actionItems,
     };
     const tags = Array.from(new Set(analysis.tags.map((t) => t.trim()).filter(Boolean)));
+    const matchedFolder = folders.find(
+      (f) => f.name.trim().toLowerCase() === analysis.folder.trim().toLowerCase()
+    );
+
     await fs.updateItem(userId, itemId, {
       summary: analysis.summary || undefined,
       category: analysis.category || undefined,
       tags,
       metadata,
       aiStatus: "completed",
+      ...(matchedFolder ? { collectionIds: [matchedFolder.id] } : {}),
     });
   } catch (err) {
     await fs.updateItem(userId, itemId, {
