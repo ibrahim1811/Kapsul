@@ -23,7 +23,7 @@ function Dashboard() {
   const { items, loading } = useItems(user?.uid);
   const { collections } = useCollections(user?.uid);
   const { uploads, handleFiles } = useFileUpload(user?.uid);
-  const dragging = useGlobalDrop(handleFiles);
+  const dragging = useGlobalDrop(handleFiles, (folderName, files) => handleFolderFiles(folderName, files));
 
   const [query, setQuery] = useState("");
   const [activeType, setActiveType] = useState<Item["type"] | null>(null);
@@ -75,6 +75,12 @@ function Dashboard() {
     router.replace("/login");
   }
 
+  async function handleFolderFiles(folderName: string, files: File[]) {
+    if (!user) return;
+    const collectionId = await createCollection(user.uid, folderName);
+    handleFiles(files, collectionId);
+  }
+
   if (!user) return null;
 
   return (
@@ -102,7 +108,7 @@ function Dashboard() {
                 </h1>
                 <p className="mt-2 text-sm text-bone-muted">Henüz kapsülünde öge yok.</p>
               </div>
-              <UploadDropzone uploads={uploads} onFiles={handleFiles} />
+              <UploadDropzone uploads={uploads} onFiles={handleFiles} onFolderFiles={handleFolderFiles} />
             </>
           ) : (
             <>
@@ -116,7 +122,7 @@ function Dashboard() {
                       {loading ? "Yükleniyor…" : `${scopedItems.length} öge`}
                     </p>
                   </div>
-                  <UploadButton onFiles={handleFiles} />
+                  <UploadButton onFiles={handleFiles} onFolderFiles={handleFolderFiles} />
                 </div>
                 <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
               </div>

@@ -23,7 +23,8 @@ export function stripExtension(fileName: string): string {
 export async function uploadItemFile(
   userId: string,
   file: File,
-  onProgress?: (percent: number) => void
+  onProgress?: (percent: number) => void,
+  collectionId?: string
 ): Promise<string> {
   if (file.size > MAX_UPLOAD_BYTES) {
     throw new Error(`Dosya çok büyük (maks ${MAX_UPLOAD_BYTES / 1024 / 1024}MB).`);
@@ -43,6 +44,7 @@ export async function uploadItemFile(
     storagePath: itemStoragePath(userId, itemRef.id, file.name),
     mimeType: file.type || "application/octet-stream",
     fileSize: file.size,
+    collectionIds: collectionId ? [collectionId] : [],
     tags: [],
     processingStatus: "pending",
     aiStatus: "pending",

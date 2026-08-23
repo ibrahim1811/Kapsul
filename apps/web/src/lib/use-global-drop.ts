@@ -1,8 +1,12 @@
 "use client";
 
+import { readDataTransfer } from "@/lib/folder-drop";
 import { useEffect, useState } from "react";
 
-export function useGlobalDrop(onDrop: (files: FileList) => void) {
+export function useGlobalDrop(
+  onDrop: (files: FileList) => void,
+  onFolderDrop?: (folderName: string, files: File[]) => void
+) {
   const [dragging, setDragging] = useState(false);
 
   useEffect(() => {
@@ -14,10 +18,16 @@ export function useGlobalDrop(onDrop: (files: FileList) => void) {
     function handleDragLeave(e: DragEvent) {
       if (!e.relatedTarget) setDragging(false);
     }
-    function handleDrop(e: DragEvent) {
+    async function handleDrop(e: DragEvent) {
       e.preventDefault();
       setDragging(false);
-      if (e.dataTransfer?.files?.length) onDrop(e.dataTransfer.files);
+      if (!e.dataTransfer) return;
+      const { folderName, files } = await readDataTransfer(e.dataTransfer);
+      if (folderName && onFolderDrop) {
+        onFolderDrop(folderName, files);
+      } else if (e.dataTransfer.files?.length) {
+        onDrop(e.dataTransfer.files);
+      }
     }
 
     window.addEventListener("dragover", handleDragOver);
@@ -28,7 +38,7 @@ export function useGlobalDrop(onDrop: (files: FileList) => void) {
       window.removeEventListener("dragleave", handleDragLeave);
       window.removeEventListener("drop", handleDrop);
     };
-  }, [onDrop]);
+  }, [onDrop, onFolderDrop]);
 
   return dragging;
 }

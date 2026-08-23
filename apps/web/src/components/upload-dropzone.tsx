@@ -1,17 +1,23 @@
 "use client";
 
+import { groupByRelativePathRoot, readDataTransfer } from "@/lib/folder-drop";
 import type { UploadState } from "@/lib/use-file-upload";
 import { useRef, useState } from "react";
+
+type DirectoryInputProps = { webkitdirectory?: string; directory?: string };
 
 export function UploadDropzone({
   uploads,
   onFiles,
+  onFolderFiles,
 }: {
   uploads: UploadState[];
   onFiles: (files: FileList | null) => void;
+  onFolderFiles?: (folderName: string, files: File[]) => void;
 }) {
   const [dragging, setDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const folderInputRef = useRef<HTMLInputElement>(null);
 
   return (
     <div className="w-full">
@@ -21,10 +27,15 @@ export function UploadDropzone({
           setDragging(true);
         }}
         onDragLeave={() => setDragging(false)}
-        onDrop={(e) => {
+        onDrop={async (e) => {
           e.preventDefault();
           setDragging(false);
-          onFiles(e.dataTransfer.files);
+          const { folderName, files } = await readDataTransfer(e.dataTransfer);
+          if (folderName && onFolderFiles) {
+            onFolderFiles(folderName, files);
+          } else {
+            onFiles(e.dataTransfer.files);
+          }
         }}
         onClick={() => inputRef.current?.click()}
         className={`flex cursor-pointer flex-col items-center justify-center gap-2 rounded-3xl border border-dashed px-6 py-12 text-center backdrop-blur-sm transition-all ${
@@ -36,7 +47,7 @@ export function UploadDropzone({
         <span className="flex h-11 w-11 items-center justify-center rounded-full bg-accent/10 text-lg text-accent">
           ↑
         </span>
-        <p className="text-sm font-medium text-bone">Dosyaları buraya sürükle ya da tıkla</p>
+        <p className="text-sm font-medium text-bone">Dosyaları ya da bir klasörü buraya sürükle</p>
         <p className="text-xs text-bone-muted">PDF, görsel, ses, video, belge — maks 25MB</p>
         <input
           ref={inputRef}
@@ -50,6 +61,34 @@ export function UploadDropzone({
         />
       </div>
 
+      {onFolderFiles && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            folderInputRef.current?.click();
+          }}
+          className="mt-2 text-xs text-bone-muted underline-offset-2 hover:text-bone hover:underline"
+        >
+          veya bir klasör seç
+        </button>
+      )}
+      {onFolderFiles && (
+        <input
+          ref={folderInputRef}
+          type="file"
+          multiple
+          className="hidden"
+          onChange={(e) => {
+            if (!e.target.files) return;
+            const { folderName, files } = groupByRelativePathRoot(e.target.files);
+            if (folderName) onFolderFiles(folderName, files);
+            e.target.value = "";
+          }}
+          {...({ webkitdirectory: "", directory: "" } as DirectoryInputProps)}
+        />
+      )}
+
       <UploadProgressList uploads={uploads} />
     </div>
   );
@@ -57,10 +96,13 @@ export function UploadDropzone({
 
 export function UploadButton({
   onFiles,
+  onFolderFiles,
 }: {
   onFiles: (files: FileList | null) => void;
+  onFolderFiles?: (folderName: string, files: File[]) => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const folderInputRef = useRef<HTMLInputElement>(null);
 
   return (
     <>
@@ -81,6 +123,30 @@ export function UploadButton({
           e.target.value = "";
         }}
       />
+      {onFolderFiles && (
+        <>
+          <button
+            type="button"
+            onClick={() => folderInputRef.current?.click()}
+            className="flex shrink-0 items-center gap-1.5 rounded-full border border-ink-border px-4 py-2 text-sm font-medium text-bone-muted transition-colors hover:border-white/20 hover:text-bone"
+          >
+            <span aria-hidden="true">📁</span> Klasör Yükle
+          </button>
+          <input
+            ref={folderInputRef}
+            type="file"
+            multiple
+            className="hidden"
+            onChange={(e) => {
+              if (!e.target.files) return;
+              const { folderName, files } = groupByRelativePathRoot(e.target.files);
+              if (folderName) onFolderFiles(folderName, files);
+              e.target.value = "";
+            }}
+            {...({ webkitdirectory: "", directory: "" } as DirectoryInputProps)}
+          />
+        </>
+      )}
     </>
   );
 }
