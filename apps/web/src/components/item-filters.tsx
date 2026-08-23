@@ -51,6 +51,9 @@ export function ItemFilters({
   statuses,
   activeStatus,
   onStatusChange,
+  tags,
+  activeTag,
+  onTagChange,
 }: {
   query: string;
   onQueryChange: (value: string) => void;
@@ -60,6 +63,9 @@ export function ItemFilters({
   statuses: Item["processingStatus"][];
   activeStatus: Item["processingStatus"] | null;
   onStatusChange: (status: Item["processingStatus"] | null) => void;
+  tags: string[];
+  activeTag: string | null;
+  onTagChange: (tag: string | null) => void;
 }) {
   return (
     <div className="flex flex-col gap-3">
@@ -86,6 +92,19 @@ export function ItemFilters({
               label={STATUS_LABEL[status]}
               active={activeStatus === status}
               onClick={() => onStatusChange(activeStatus === status ? null : status)}
+            />
+          ))}
+        </div>
+      )}
+
+      {tags.length > 0 && (
+        <div className="flex gap-2 overflow-x-auto scrollbar-none">
+          {tags.map((tag) => (
+            <Pill
+              key={tag}
+              label={tag}
+              active={activeTag === tag}
+              onClick={() => onTagChange(activeTag === tag ? null : tag)}
             />
           ))}
         </div>

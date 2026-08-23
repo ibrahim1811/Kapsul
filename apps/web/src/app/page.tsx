@@ -21,6 +21,7 @@ function Dashboard() {
   const [query, setQuery] = useState("");
   const [activeType, setActiveType] = useState<Item["type"] | null>(null);
   const [activeStatus, setActiveStatus] = useState<Item["processingStatus"] | null>(null);
+  const [activeTag, setActiveTag] = useState<string | null>(null);
 
   const availableTypes = useMemo(
     () => Array.from(new Set(items.map((item) => item.type))),
@@ -30,19 +31,24 @@ function Dashboard() {
     () => Array.from(new Set(items.map((item) => item.processingStatus))),
     [items]
   );
+  const availableTags = useMemo(
+    () => Array.from(new Set(items.flatMap((item) => item.tags))).sort(),
+    [items]
+  );
 
   const filteredItems = useMemo(() => {
     const q = query.trim().toLowerCase();
     return items.filter((item) => {
       if (activeType && item.type !== activeType) return false;
       if (activeStatus && item.processingStatus !== activeStatus) return false;
+      if (activeTag && !item.tags.includes(activeTag)) return false;
       if (!q) return true;
       return (
         item.title.toLowerCase().includes(q) ||
         item.tags.some((tag) => tag.toLowerCase().includes(q))
       );
     });
-  }, [items, query, activeType, activeStatus]);
+  }, [items, query, activeType, activeStatus, activeTag]);
 
   async function handleSignOut() {
     await signOut(getFirebaseAuth());
@@ -91,6 +97,9 @@ function Dashboard() {
             statuses={availableStatuses}
             activeStatus={activeStatus}
             onStatusChange={setActiveStatus}
+            tags={availableTags}
+            activeTag={activeTag}
+            onTagChange={setActiveTag}
           />
         )}
 
