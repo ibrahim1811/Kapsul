@@ -5,17 +5,26 @@ import { useAuth } from "@/lib/auth-context";
 import { ensureUserProfile, updateUserProfile } from "@/lib/user-profile";
 import { useUserProfile } from "@/lib/use-user-profile";
 import Link from "next/link";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 function SettingsPage() {
   const { user } = useAuth();
   const profile = useUserProfile(user?.uid);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) void ensureUserProfile(user);
   }, [user]);
 
   const autoFolderEnabled = profile?.autoFolderEnabled === true;
+
+  function toggleAutoFolder() {
+    if (!user) return;
+    setError(null);
+    updateUserProfile(user.uid, { autoFolderEnabled: !autoFolderEnabled }).catch((err) => {
+      setError(err instanceof Error ? err.message : "Kaydedilemedi.");
+    });
+  }
 
   return (
     <main className="relative min-h-screen bg-ink">
@@ -35,13 +44,15 @@ function SettingsPage() {
               <p className="mt-1 text-xs leading-relaxed text-bone-muted">
                 Açarsan, yeni bir öge yüklediğinde AI içeriği mevcut klasörlerinden biriyle
                 gerçekten uyuşuyorsa ögeyi otomatik olarak o klasöre yerleştirir. AI yeni klasör
-                oluşturmaz — sadece senin oluşturduğun klasörlere bakar.
+                oluşturmaz — sadece senin oluşturduğun klasörlere bakar. Sadece bundan sonra
+                yüklenen ögelere uygulanır; daha önce yüklenmiş ögeleri geriye dönük taşımaz.
               </p>
+              {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
             </div>
             <button
               type="button"
               disabled={!user}
-              onClick={() => user && updateUserProfile(user.uid, { autoFolderEnabled: !autoFolderEnabled })}
+              onClick={toggleAutoFolder}
               className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
                 autoFolderEnabled ? "bg-accent" : "bg-white/10"
               }`}

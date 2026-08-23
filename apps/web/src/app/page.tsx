@@ -106,16 +106,19 @@ function Dashboard() {
             </>
           ) : (
             <>
-              <div className="flex items-center justify-between gap-3 border-b border-ink-border pb-5">
-                <div>
-                  <h1 className="text-xl font-semibold tracking-tight text-bone">
-                    {activeCollectionName ?? "Tüm Ögeler"}
-                  </h1>
-                  <p className="mt-0.5 text-xs text-bone-muted">
-                    {loading ? "Yükleniyor…" : `${scopedItems.length} öge`}
-                  </p>
+              <div className="flex flex-col gap-5">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <h1 className="text-2xl font-semibold tracking-tight text-bone">
+                      {activeCollectionName ?? "Tüm Ögeler"}
+                    </h1>
+                    <p className="mt-0.5 text-sm text-bone-muted">
+                      {loading ? "Yükleniyor…" : `${scopedItems.length} öge`}
+                    </p>
+                  </div>
+                  <UploadButton onFiles={handleFiles} />
                 </div>
-                <UploadButton onFiles={handleFiles} />
+                <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
               </div>
 
               <UploadProgressList uploads={uploads} />

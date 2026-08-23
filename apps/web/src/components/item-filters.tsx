@@ -31,7 +31,7 @@ function TagChip({
     <button
       type="button"
       onClick={onClick}
-      className={`shrink-0 rounded-md border border-dashed px-2 py-0.5 text-[10px] font-medium transition-colors ${
+      className={`shrink-0 rounded-md border border-dashed px-2.5 py-1 text-xs font-medium transition-colors ${
         active
           ? "border-accent/60 bg-accent/10 text-accent"
           : "border-ink-border/70 text-bone-muted/80 hover:border-white/30 hover:text-bone-muted"
@@ -55,7 +55,7 @@ function Pill({
     <button
       type="button"
       onClick={onClick}
-      className={`shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors ${
+      className={`shrink-0 rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors ${
         active
           ? "border-accent/60 bg-accent/15 text-accent"
           : "border-ink-border text-bone-muted hover:border-white/30 hover:text-bone"
@@ -92,12 +92,12 @@ export function ItemFilters({
   onTagChange: (tag: string | null) => void;
 }) {
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-4">
       <input
         value={query}
         onChange={(e) => onQueryChange(e.target.value)}
         placeholder="Başlık ya da etikette ara…"
-        className="w-full rounded-full border border-ink-border bg-black/30 px-3.5 py-2 text-xs text-bone placeholder:text-bone-muted outline-none transition-colors focus:border-accent/60"
+        className="w-full rounded-full border border-ink-border bg-black/30 px-4 py-2.5 text-sm text-bone placeholder:text-bone-muted outline-none transition-colors focus:border-accent/60"
       />
 
       {(types.length > 0 || statuses.length > 0) && (
@@ -122,11 +122,12 @@ export function ItemFilters({
       )}
 
       {tags.length > 0 && (
-        <div className="flex flex-col gap-1.5 border-t border-ink-border/60 pt-3">
-          <span className="text-[11px] font-medium uppercase tracking-wide text-bone-muted/60">
+        <div className="flex flex-col gap-2">
+          <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+          <span className="text-xs font-medium uppercase tracking-wide text-bone-muted/60">
             Etiketler
           </span>
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-2">
             {tags.map((tag) => (
               <TagChip
                 key={tag}
