@@ -4,7 +4,8 @@ import type { AIProvider } from "./ai-provider.interface";
 import { buildAnalyzeItemPrompt } from "./prompts/analyze-item.prompt";
 import { buildAnswerQuestionPrompt } from "./prompts/answer-question.prompt";
 
-const DEFAULT_MODEL = "llama-3.3-70b-versatile";
+// llama-3.3-70b-versatile Groq tarafından Ağustos 2026'da kaldırıldı; önerilen yerine geçen model kullanılıyor.
+const DEFAULT_MODEL = "openai/gpt-oss-120b";
 
 const EMPTY_ANALYSIS: AIAnalysisResult = {
   title: "",
@@ -60,6 +61,8 @@ export class GroqProvider implements AIProvider {
       messages: [{ role: "user", content: buildAnalyzeItemPrompt(text, existingTags) }],
       response_format: { type: "json_object" },
       temperature: 0.2,
+      max_completion_tokens: 4096,
+      reasoning_format: "hidden",
     });
 
     const raw = completion.choices[0]?.message?.content ?? "";

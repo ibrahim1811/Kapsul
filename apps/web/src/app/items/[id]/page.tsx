@@ -148,8 +148,9 @@ function ItemDetail({ itemId }: { itemId: string }) {
             {item.originalFileName && <span className="truncate">{item.originalFileName}</span>}
           </div>
 
-          {item.processingStatus === "failed" && item.processingError && (
+          {(item.processingStatus === "failed" || item.aiStatus === "failed") && item.processingError && (
             <p className="mt-3 rounded-2xl border border-red-500/20 bg-red-500/5 px-3 py-2 text-xs text-red-400">
+              {item.aiStatus === "failed" && item.processingStatus !== "failed" ? "AI analizi başarısız: " : ""}
               {item.processingError}
             </p>
           )}

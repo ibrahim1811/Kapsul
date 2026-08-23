@@ -86,6 +86,8 @@ async function extractImage(item: ExtractableItem, bucket: R2Bucket, groqApiKey:
       },
     ],
     temperature: 0.2,
+    max_completion_tokens: 4096,
+    reasoning_format: "hidden",
   });
 
   return { text: stripThinking(completion.choices[0]?.message?.content ?? "") };
