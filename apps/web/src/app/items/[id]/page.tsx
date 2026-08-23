@@ -4,8 +4,11 @@ export const runtime = "edge";
 
 import { ProtectedRoute } from "@/components/protected-route";
 import { useAuth } from "@/lib/auth-context";
+import { moveItemToCollection } from "@/lib/collections";
+import { formatFileSize, formatRelativeDate } from "@/lib/format";
 import { deleteItem, updateItem } from "@/lib/items";
 import { downloadFile } from "@/lib/storage-worker";
+import { useCollections } from "@/lib/use-collections";
 import { useItem } from "@/lib/use-item";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -27,15 +30,28 @@ const STATUS_CLASS: Record<string, string> = {
 
 const PREVIEWABLE_TYPES = new Set(["image", "pdf", "audio", "video"]);
 
+type MetadataArrayKey = "dates" | "people" | "organizations" | "locations" | "amounts" | "actionItems";
+
+const METADATA_GROUPS: { key: MetadataArrayKey; label: string }[] = [
+  { key: "dates", label: "Tarihler" },
+  { key: "people", label: "Kişiler" },
+  { key: "organizations", label: "Kurumlar" },
+  { key: "locations", label: "Konumlar" },
+  { key: "amounts", label: "Tutarlar" },
+  { key: "actionItems", label: "Yapılacaklar" },
+];
+
 function ItemDetail({ itemId }: { itemId: string }) {
   const { user } = useAuth();
   const router = useRouter();
   const item = useItem(user?.uid, itemId);
+  const { collections } = useCollections(user?.uid);
 
   const [title, setTitle] = useState("");
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [movingFolder, setMovingFolder] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewError, setPreviewError] = useState(false);
 
@@ -124,6 +140,16 @@ function ItemDetail({ itemId }: { itemId: string }) {
     }
   }
 
+  async function handleMoveFolder(collectionId: string) {
+    if (!user) return;
+    setMovingFolder(true);
+    try {
+      await moveItemToCollection(user.uid, itemId, collectionId || null);
+    } finally {
+      setMovingFolder(false);
+    }
+  }
+
   return (
     <main className="relative min-h-screen bg-ink">
       <div className="pointer-events-none absolute inset-0 h-[320px] bg-radial-glow" />
@@ -133,7 +159,7 @@ function ItemDetail({ itemId }: { itemId: string }) {
           ← Kapsüle dön
         </Link>
 
-        <div className="rounded-3xl border border-ink-border bg-ink-panel/60 p-6 shadow-card backdrop-blur-sm">
+        <div className="animate-fade-in-up rounded-3xl border border-ink-border bg-ink-panel/60 p-6 shadow-card backdrop-blur-sm">
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
@@ -145,7 +171,32 @@ function ItemDetail({ itemId }: { itemId: string }) {
             <span className={`rounded-full px-2.5 py-1 ${STATUS_CLASS[item.processingStatus] ?? "bg-white/5 text-bone-muted"}`}>
               {STATUS_LABEL[item.processingStatus] ?? item.processingStatus}
             </span>
+            {item.aiStatus !== item.processingStatus && (
+              <span className={`rounded-full px-2.5 py-1 ${STATUS_CLASS[item.aiStatus] ?? "bg-white/5 text-bone-muted"}`}>
+                AI: {STATUS_LABEL[item.aiStatus] ?? item.aiStatus}
+              </span>
+            )}
             {item.originalFileName && <span className="truncate">{item.originalFileName}</span>}
+            {item.fileSize ? <span>{formatFileSize(item.fileSize)}</span> : null}
+            {item.createdAt && <span>{formatRelativeDate(item.createdAt)}</span>}
+          </div>
+
+          <div className="mt-3 flex items-center gap-2 text-xs text-bone-muted">
+            <label htmlFor="collection-select">Klasör:</label>
+            <select
+              id="collection-select"
+              value={item.collectionIds?.[0] ?? ""}
+              onChange={(e) => handleMoveFolder(e.target.value)}
+              disabled={movingFolder}
+              className="rounded-full border border-ink-border bg-black/30 px-2.5 py-1 text-xs text-bone outline-none disabled:opacity-50"
+            >
+              <option value="">Klasörsüz</option>
+              {collections.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
           </div>
 
           {(item.processingStatus === "failed" || item.aiStatus === "failed") && item.processingError && (
@@ -176,7 +227,7 @@ function ItemDetail({ itemId }: { itemId: string }) {
               type="button"
               onClick={handleSave}
               disabled={saving}
-              className="rounded-full bg-accent px-4 py-2 text-sm font-semibold text-ink transition-transform hover:scale-[1.02] disabled:opacity-50"
+              className="rounded-full bg-accent px-4 py-2 text-sm font-semibold text-ink transition-transform hover:scale-[1.02] active:scale-[0.97] disabled:opacity-50"
             >
               {saving ? "Kaydediliyor…" : "Kaydet"}
             </button>
@@ -185,7 +236,7 @@ function ItemDetail({ itemId }: { itemId: string }) {
                 type="button"
                 onClick={handleDownload}
                 disabled={downloading}
-                className="rounded-full border border-ink-border px-4 py-2 text-sm font-medium text-bone transition-colors hover:border-white/30 disabled:opacity-50"
+                className="rounded-full border border-ink-border px-4 py-2 text-sm font-medium text-bone transition-all hover:border-white/30 active:scale-[0.97] disabled:opacity-50"
               >
                 {downloading ? "İndiriliyor…" : "İndir"}
               </button>
@@ -194,7 +245,7 @@ function ItemDetail({ itemId }: { itemId: string }) {
               type="button"
               onClick={handleDelete}
               disabled={deleting}
-              className="rounded-full border border-red-500/30 px-4 py-2 text-sm font-medium text-red-400 transition-colors hover:border-red-500/60 disabled:opacity-50"
+              className="rounded-full border border-red-500/30 px-4 py-2 text-sm font-medium text-red-400 transition-all hover:border-red-500/60 active:scale-[0.97] disabled:opacity-50"
             >
               {deleting ? "Siliniyor…" : "Sil"}
             </button>
@@ -202,7 +253,10 @@ function ItemDetail({ itemId }: { itemId: string }) {
         </div>
 
         {PREVIEWABLE_TYPES.has(item.type) && item.originalFileName && (
-          <div className="overflow-hidden rounded-3xl border border-ink-border bg-ink-panel/60 backdrop-blur-sm">
+          <div
+            style={{ animationDelay: "80ms" }}
+            className="animate-fade-in-up overflow-hidden rounded-3xl border border-ink-border bg-ink-panel/60 backdrop-blur-sm"
+          >
             {previewError ? (
               <p className="p-6 text-sm text-bone-muted">Önizleme yüklenemedi.</p>
             ) : !previewUrl ? (
@@ -223,18 +277,54 @@ function ItemDetail({ itemId }: { itemId: string }) {
         )}
 
         {item.summary && (
-          <div className="rounded-3xl border border-ink-border bg-ink-panel/60 p-6 backdrop-blur-sm">
+          <div
+            style={{ animationDelay: "120ms" }}
+            className="animate-fade-in-up rounded-3xl border border-ink-border bg-ink-panel/60 p-6 backdrop-blur-sm"
+          >
             <h2 className="text-xs font-semibold uppercase tracking-wide text-bone-muted">Özet</h2>
             <p className="mt-2 text-sm leading-relaxed text-bone">{item.summary}</p>
           </div>
         )}
 
         {item.extractedText && (
-          <div className="rounded-3xl border border-ink-border bg-ink-panel/60 p-6 backdrop-blur-sm">
+          <div
+            style={{ animationDelay: "160ms" }}
+            className="animate-fade-in-up rounded-3xl border border-ink-border bg-ink-panel/60 p-6 backdrop-blur-sm"
+          >
             <h2 className="text-xs font-semibold uppercase tracking-wide text-bone-muted">İçerik</h2>
             <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-bone-muted">
               {item.extractedText}
             </p>
+          </div>
+        )}
+
+        {item.metadata && METADATA_GROUPS.some(({ key }) => item.metadata?.[key]?.length) && (
+          <div
+            style={{ animationDelay: "200ms" }}
+            className="animate-fade-in-up flex flex-col gap-4 rounded-3xl border border-ink-border bg-ink-panel/60 p-6 backdrop-blur-sm"
+          >
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-bone-muted">
+              AI Analizi
+            </h2>
+            {METADATA_GROUPS.map(({ key, label }) => {
+              const values = item.metadata?.[key];
+              if (!values?.length) return null;
+              return (
+                <div key={key}>
+                  <p className="text-xs font-medium text-bone-muted/70">{label}</p>
+                  <div className="mt-1.5 flex flex-wrap gap-1.5">
+                    {values.map((value) => (
+                      <span
+                        key={value}
+                        className="rounded-full border border-ink-border bg-black/30 px-3 py-1 text-xs text-bone-muted"
+                      >
+                        {value}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
