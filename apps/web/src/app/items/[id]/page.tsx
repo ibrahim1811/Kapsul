@@ -1,7 +1,5 @@
 "use client";
 
-export const runtime = "edge";
-
 import { ProtectedRoute } from "@/components/protected-route";
 import { useAuth } from "@/lib/auth-context";
 import { moveItemToCollection } from "@/lib/collections";
@@ -157,39 +155,44 @@ function ItemDetail({ itemId }: { itemId: string }) {
       <div className="pointer-events-none absolute inset-0 h-[320px] bg-radial-glow" />
 
       <div
-        className={`relative z-10 mx-auto flex flex-col gap-6 px-4 py-8 sm:px-6 ${
-          hasPreview ? "max-w-6xl lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)] lg:items-start" : "max-w-2xl"
+        className={`relative z-10 flex flex-col gap-6 px-4 py-6 sm:px-6 ${
+          hasPreview
+            ? "lg:grid lg:h-[calc(100vh-3rem)] lg:grid-cols-2 lg:grid-rows-[auto_1fr] lg:items-stretch lg:gap-8"
+            : "mx-auto max-w-2xl py-8"
         }`}
       >
-        <Link href="/" className="w-fit text-sm text-bone-muted transition-colors hover:text-accent lg:col-span-2">
+        <Link
+          href="/"
+          className={`w-fit text-sm text-bone-muted transition-colors hover:text-accent ${hasPreview ? "lg:col-span-2" : ""}`}
+        >
           ← Kapsüle dön
         </Link>
 
         {hasPreview && (
           <div
             style={{ animationDelay: "80ms" }}
-            className="animate-fade-in-up overflow-hidden rounded-3xl border border-ink-border bg-ink-panel/60 backdrop-blur-sm lg:sticky lg:top-8"
+            className="animate-fade-in-up overflow-hidden rounded-3xl border border-ink-border bg-ink-panel/60 backdrop-blur-sm lg:h-full"
           >
             {previewError ? (
               <p className="p-6 text-sm text-bone-muted">Önizleme yüklenemedi.</p>
             ) : !previewUrl ? (
-              <div className="flex h-48 items-center justify-center">
+              <div className="flex h-48 items-center justify-center lg:h-full">
                 <div className="h-6 w-6 animate-spin rounded-full border-2 border-ink-border border-t-accent" />
               </div>
             ) : item.type === "image" ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={previewUrl} alt={item.title} className="max-h-[80vh] w-full object-contain" />
+              <img src={previewUrl} alt={item.title} className="h-full max-h-[80vh] w-full object-contain lg:max-h-none" />
             ) : item.type === "pdf" ? (
-              <iframe src={previewUrl} title={item.title} className="h-[80vh] w-full" />
+              <iframe src={previewUrl} title={item.title} className="h-[80vh] w-full lg:h-full" />
             ) : item.type === "audio" ? (
               <audio src={previewUrl} controls className="w-full p-6" />
             ) : (
-              <video src={previewUrl} controls className="max-h-[80vh] w-full" />
+              <video src={previewUrl} controls className="h-full max-h-[80vh] w-full lg:max-h-none" />
             )}
           </div>
         )}
 
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-6 lg:h-full lg:overflow-y-auto lg:pr-1">
         <div className="animate-fade-in-up rounded-3xl border border-ink-border bg-ink-panel/60 p-6 shadow-card backdrop-blur-sm">
           <input
             value={title}
