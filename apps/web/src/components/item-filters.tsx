@@ -18,6 +18,30 @@ const STATUS_LABEL: Record<Item["processingStatus"], string> = {
   failed: "Başarısız",
 };
 
+function TagChip({
+  label,
+  active,
+  onClick,
+}: {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`shrink-0 rounded-md border border-dashed px-2.5 py-1 text-[11px] font-medium transition-colors ${
+        active
+          ? "border-accent/60 bg-accent/10 text-accent"
+          : "border-ink-border/70 text-bone-muted/80 hover:border-white/30 hover:text-bone-muted"
+      }`}
+    >
+      #{label}
+    </button>
+  );
+}
+
 function Pill({
   label,
   active,
@@ -98,15 +122,20 @@ export function ItemFilters({
       )}
 
       {tags.length > 0 && (
-        <div className="flex gap-2 overflow-x-auto scrollbar-none">
-          {tags.map((tag) => (
-            <Pill
-              key={tag}
-              label={tag}
-              active={activeTag === tag}
-              onClick={() => onTagChange(activeTag === tag ? null : tag)}
-            />
-          ))}
+        <div className="flex flex-col gap-1.5 border-t border-ink-border/60 pt-3">
+          <span className="text-[11px] font-medium uppercase tracking-wide text-bone-muted/60">
+            Etiketler
+          </span>
+          <div className="flex flex-wrap gap-1.5">
+            {tags.map((tag) => (
+              <TagChip
+                key={tag}
+                label={tag}
+                active={activeTag === tag}
+                onClick={() => onTagChange(activeTag === tag ? null : tag)}
+              />
+            ))}
+          </div>
         </div>
       )}
     </div>
