@@ -37,11 +37,12 @@ const STATUS_CLASS: Record<Item["processingStatus"], string> = {
   failed: "bg-red-500/10 text-red-400",
 };
 
-export function ItemCard({ item }: { item: Item }) {
+export function ItemCard({ item, index = 0 }: { item: Item; index?: number }) {
   return (
     <Link
       href={`/items/${item.id}`}
-      className="group flex flex-col gap-2.5 rounded-2xl border border-ink-border bg-ink-panel/60 p-4 shadow-card backdrop-blur-sm transition-all hover:-translate-y-0.5 hover:border-accent/40"
+      style={{ animationDelay: `${Math.min(index, 12) * 30}ms` }}
+      className="group flex animate-fade-in-up flex-col gap-2.5 rounded-2xl border border-ink-border bg-ink-panel/60 p-4 shadow-card backdrop-blur-sm transition-all hover:-translate-y-0.5 hover:border-accent/40 active:scale-[0.98]"
     >
       <div className="flex items-center justify-between">
         <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/5 text-base">

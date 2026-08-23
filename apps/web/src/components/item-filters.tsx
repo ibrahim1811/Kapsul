@@ -31,7 +31,7 @@ function TagChip({
     <button
       type="button"
       onClick={onClick}
-      className={`shrink-0 rounded-md border border-dashed px-2.5 py-1 text-xs font-medium transition-colors ${
+      className={`shrink-0 rounded-md border border-dashed px-2.5 py-1 text-xs font-medium transition-all active:scale-[0.96] ${
         active
           ? "border-accent/60 bg-accent/10 text-accent"
           : "border-ink-border/70 text-bone-muted/80 hover:border-white/30 hover:text-bone-muted"
@@ -55,7 +55,7 @@ function Pill({
     <button
       type="button"
       onClick={onClick}
-      className={`shrink-0 rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors ${
+      className={`shrink-0 rounded-full border px-3.5 py-1.5 text-sm font-medium transition-all active:scale-[0.96] ${
         active
           ? "border-accent/60 bg-accent/15 text-accent"
           : "border-ink-border text-bone-muted hover:border-white/30 hover:text-bone"

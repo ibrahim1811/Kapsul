@@ -156,8 +156,8 @@ function Dashboard() {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
-                  {filteredItems.map((item) => (
-                    <ItemCard key={item.id} item={item} />
+                  {filteredItems.map((item, index) => (
+                    <ItemCard key={item.id} item={item} index={index} />
                   ))}
                 </div>
               )}
@@ -166,7 +166,7 @@ function Dashboard() {
         </div>
 
         {dragging && (
-          <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center border-4 border-dashed border-accent bg-ink/80 backdrop-blur-sm">
+          <div className="pointer-events-none fixed inset-0 z-50 flex animate-fade-in-scale items-center justify-center border-4 border-dashed border-accent bg-ink/80 backdrop-blur-sm">
             <p className="text-lg font-semibold text-accent">Yüklemek için bırak</p>
           </div>
         )}

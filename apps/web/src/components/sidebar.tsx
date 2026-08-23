@@ -55,9 +55,9 @@ export function Sidebar({
         <button
           type="button"
           onClick={() => onSelectCollection(null)}
-          className={`flex items-center gap-2 rounded-xl px-2.5 py-1.5 text-left text-xs font-medium transition-colors ${
+          className={`relative flex items-center gap-2 rounded-xl px-2.5 py-1.5 text-left text-xs font-medium transition-colors active:scale-[0.98] ${
             activeCollectionId === null
-              ? "bg-accent/15 text-accent"
+              ? "bg-accent/15 text-accent before:absolute before:-left-3 before:top-1/2 before:h-3.5 before:w-0.5 before:-translate-y-1/2 before:rounded-full before:bg-accent"
               : "text-bone-muted hover:bg-white/5 hover:text-bone"
           }`}
         >
@@ -77,9 +77,9 @@ export function Sidebar({
             key={c.id}
             type="button"
             onClick={() => onSelectCollection(c.id)}
-            className={`flex items-center justify-between gap-2 rounded-xl px-2.5 py-1.5 text-left text-xs font-medium transition-colors ${
+            className={`relative flex items-center justify-between gap-2 rounded-xl px-2.5 py-1.5 text-left text-xs font-medium transition-colors active:scale-[0.98] ${
               activeCollectionId === c.id
-                ? "bg-accent/15 text-accent"
+                ? "bg-accent/15 text-accent before:absolute before:-left-3 before:top-1/2 before:h-3.5 before:w-0.5 before:-translate-y-1/2 before:rounded-full before:bg-accent"
                 : "text-bone-muted hover:bg-white/5 hover:text-bone"
             }`}
           >
@@ -107,7 +107,7 @@ export function Sidebar({
           <button
             type="button"
             onClick={() => setCreating(true)}
-            className="rounded-xl px-2.5 py-1.5 text-left text-xs text-bone-muted transition-colors hover:bg-white/5 hover:text-bone"
+            className="rounded-xl px-2.5 py-1.5 text-left text-xs text-bone-muted transition-colors active:scale-[0.98] hover:bg-white/5 hover:text-bone"
           >
             + Yeni klasör
           </button>
@@ -117,14 +117,14 @@ export function Sidebar({
       <div className="flex flex-col gap-0.5 border-t border-ink-border pt-2">
         <Link
           href="/settings"
-          className="rounded-xl px-2.5 py-1.5 text-xs font-medium text-bone-muted transition-colors hover:bg-white/5 hover:text-bone"
+          className="rounded-xl px-2.5 py-1.5 text-xs font-medium text-bone-muted transition-colors active:scale-[0.98] hover:bg-white/5 hover:text-bone"
         >
           ⚙ Ayarlar
         </Link>
         <button
           type="button"
           onClick={onSignOut}
-          className="rounded-xl px-2.5 py-1.5 text-left text-xs font-medium text-bone-muted transition-colors hover:bg-white/5 hover:text-bone"
+          className="rounded-xl px-2.5 py-1.5 text-left text-xs font-medium text-bone-muted transition-colors active:scale-[0.98] hover:bg-white/5 hover:text-bone"
         >
           ⏻ Sign out
         </button>

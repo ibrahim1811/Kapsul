@@ -109,7 +109,7 @@ export function UploadButton({
       <button
         type="button"
         onClick={() => inputRef.current?.click()}
-        className="flex shrink-0 items-center gap-1.5 rounded-full bg-accent px-4 py-2 text-sm font-semibold text-ink transition-transform hover:scale-[1.02]"
+        className="flex shrink-0 items-center gap-1.5 rounded-full bg-accent px-4 py-2 text-sm font-semibold text-ink transition-transform hover:scale-[1.02] active:scale-[0.97]"
       >
         <span aria-hidden="true">↑</span> Yükle
       </button>
@@ -128,7 +128,7 @@ export function UploadButton({
           <button
             type="button"
             onClick={() => folderInputRef.current?.click()}
-            className="flex shrink-0 items-center gap-1.5 rounded-full border border-ink-border px-4 py-2 text-sm font-medium text-bone-muted transition-colors hover:border-white/20 hover:text-bone"
+            className="flex shrink-0 items-center gap-1.5 rounded-full border border-ink-border px-4 py-2 text-sm font-medium text-bone-muted transition-all hover:border-white/20 hover:text-bone active:scale-[0.97]"
           >
             <span aria-hidden="true">📁</span> Klasör Yükle
           </button>
