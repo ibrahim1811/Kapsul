@@ -5,7 +5,7 @@ export const runtime = "edge";
 import { ProtectedRoute } from "@/components/protected-route";
 import { useAuth } from "@/lib/auth-context";
 import { moveItemToCollection } from "@/lib/collections";
-import { formatFileSize, formatRelativeDate } from "@/lib/format";
+import { formatFileSize, formatRelativeDate, isLikelyGarbledText } from "@/lib/format";
 import { deleteItem, updateItem } from "@/lib/items";
 import { downloadFile } from "@/lib/storage-worker";
 import { useCollections } from "@/lib/use-collections";
@@ -102,6 +102,8 @@ function ItemDetail({ itemId }: { itemId: string }) {
     );
   }
 
+  const hasPreview = PREVIEWABLE_TYPES.has(item.type) && !!item.originalFileName;
+
   async function handleSave() {
     if (!user) return;
     setSaving(true);
@@ -154,11 +156,40 @@ function ItemDetail({ itemId }: { itemId: string }) {
     <main className="relative min-h-screen bg-ink">
       <div className="pointer-events-none absolute inset-0 h-[320px] bg-radial-glow" />
 
-      <div className="relative z-10 mx-auto flex max-w-2xl flex-col gap-6 px-4 py-8 sm:px-6">
-        <Link href="/" className="w-fit text-sm text-bone-muted transition-colors hover:text-accent">
+      <div
+        className={`relative z-10 mx-auto flex flex-col gap-6 px-4 py-8 sm:px-6 ${
+          hasPreview ? "max-w-6xl lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)] lg:items-start" : "max-w-2xl"
+        }`}
+      >
+        <Link href="/" className="w-fit text-sm text-bone-muted transition-colors hover:text-accent lg:col-span-2">
           ← Kapsüle dön
         </Link>
 
+        {hasPreview && (
+          <div
+            style={{ animationDelay: "80ms" }}
+            className="animate-fade-in-up overflow-hidden rounded-3xl border border-ink-border bg-ink-panel/60 backdrop-blur-sm lg:sticky lg:top-8"
+          >
+            {previewError ? (
+              <p className="p-6 text-sm text-bone-muted">Önizleme yüklenemedi.</p>
+            ) : !previewUrl ? (
+              <div className="flex h-48 items-center justify-center">
+                <div className="h-6 w-6 animate-spin rounded-full border-2 border-ink-border border-t-accent" />
+              </div>
+            ) : item.type === "image" ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={previewUrl} alt={item.title} className="max-h-[80vh] w-full object-contain" />
+            ) : item.type === "pdf" ? (
+              <iframe src={previewUrl} title={item.title} className="h-[80vh] w-full" />
+            ) : item.type === "audio" ? (
+              <audio src={previewUrl} controls className="w-full p-6" />
+            ) : (
+              <video src={previewUrl} controls className="max-h-[80vh] w-full" />
+            )}
+          </div>
+        )}
+
+        <div className="flex flex-col gap-6">
         <div className="animate-fade-in-up rounded-3xl border border-ink-border bg-ink-panel/60 p-6 shadow-card backdrop-blur-sm">
           <input
             value={title}
@@ -252,30 +283,6 @@ function ItemDetail({ itemId }: { itemId: string }) {
           </div>
         </div>
 
-        {PREVIEWABLE_TYPES.has(item.type) && item.originalFileName && (
-          <div
-            style={{ animationDelay: "80ms" }}
-            className="animate-fade-in-up overflow-hidden rounded-3xl border border-ink-border bg-ink-panel/60 backdrop-blur-sm"
-          >
-            {previewError ? (
-              <p className="p-6 text-sm text-bone-muted">Önizleme yüklenemedi.</p>
-            ) : !previewUrl ? (
-              <div className="flex h-48 items-center justify-center">
-                <div className="h-6 w-6 animate-spin rounded-full border-2 border-ink-border border-t-accent" />
-              </div>
-            ) : item.type === "image" ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={previewUrl} alt={item.title} className="max-h-[70vh] w-full object-contain" />
-            ) : item.type === "pdf" ? (
-              <iframe src={previewUrl} title={item.title} className="h-[70vh] w-full" />
-            ) : item.type === "audio" ? (
-              <audio src={previewUrl} controls className="w-full p-6" />
-            ) : (
-              <video src={previewUrl} controls className="max-h-[70vh] w-full" />
-            )}
-          </div>
-        )}
-
         {item.summary && (
           <div
             style={{ animationDelay: "120ms" }}
@@ -292,9 +299,15 @@ function ItemDetail({ itemId }: { itemId: string }) {
             className="animate-fade-in-up rounded-3xl border border-ink-border bg-ink-panel/60 p-6 backdrop-blur-sm"
           >
             <h2 className="text-xs font-semibold uppercase tracking-wide text-bone-muted">İçerik</h2>
-            <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-bone-muted">
-              {item.extractedText}
-            </p>
+            {isLikelyGarbledText(item.extractedText) ? (
+              <p className="mt-2 text-sm leading-relaxed text-bone-muted/70">
+                Bu belgenin metni PDF içindeki font kodlamasından dolayı doğru çıkarılamadı.
+              </p>
+            ) : (
+              <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-bone-muted">
+                {item.extractedText}
+              </p>
+            )}
           </div>
         )}
 
@@ -327,6 +340,7 @@ function ItemDetail({ itemId }: { itemId: string }) {
             })}
           </div>
         )}
+        </div>
       </div>
     </main>
   );

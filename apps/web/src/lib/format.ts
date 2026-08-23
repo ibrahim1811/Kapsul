@@ -16,3 +16,39 @@ export function formatFileSize(bytes: number | undefined): string {
   if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
+
+const GARBLE_ALLOWED = /[\p{L}\p{N}\s.,;:!?'"()%/–—-]/u;
+
+function isUpper(ch: string): boolean {
+  return ch === ch.toUpperCase() && ch !== ch.toLowerCase();
+}
+
+// Font kodlaması bozuk PDF'lerde çıkarılan glyph'ler geçerli harfler olur ama
+// kelime içinde rastgele büyük/küçük harf değişir (ör. "niRxiYE") — normal
+// metinde bu neredeyse hiç olmaz, bu yüzden en güvenilir sinyal bu.
+function wordInternalCaseTransitionRatio(text: string): number {
+  const words = text.match(/\p{L}+/gu) ?? [];
+  let transitions = 0;
+  let letters = 0;
+  for (const word of words) {
+    if (word.length < 3) continue;
+    letters += word.length;
+    for (let i = 1; i < word.length; i++) {
+      if (isUpper(word.charAt(i - 1)) !== isUpper(word.charAt(i))) transitions++;
+    }
+  }
+  return letters >= 30 ? transitions / letters : 0;
+}
+
+export function isLikelyGarbledText(text: string): boolean {
+  if (!text || text.length < 20) return false;
+  const sample = text.slice(0, 2000);
+
+  let allowed = 0;
+  for (const ch of sample) {
+    if (GARBLE_ALLOWED.test(ch)) allowed++;
+  }
+  const symbolRatioBad = allowed / sample.length < 0.85;
+
+  return symbolRatioBad || wordInternalCaseTransitionRatio(sample) > 0.12;
+}
