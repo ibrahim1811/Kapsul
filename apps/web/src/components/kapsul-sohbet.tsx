@@ -1,7 +1,8 @@
 "use client";
 
 import { useKapsulSohbet } from "@/lib/conversation";
-import type { Collection, Item } from "@kapsul/types";
+import type { Citation, Collection, Item } from "@kapsul/types";
+import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 const STAGE_LABEL: Record<"searching" | "answering", string> = {
@@ -19,6 +20,46 @@ function renderWithBold(text: string) {
       part
     )
   );
+}
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function renderMessageContent(content: string, citations: Citation[] | undefined) {
+  if (!citations || citations.length === 0) return renderWithBold(content);
+
+  const titlePattern = citations.map((c) => escapeRegExp(c.itemTitle)).join("|");
+  const combined = new RegExp(`\\*\\*(${titlePattern})\\*\\*|(${titlePattern})`, "g");
+  const itemIdByTitle = new Map(citations.map((c) => [c.itemTitle, c.itemId]));
+
+  const nodes: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let key = 0;
+  let match: RegExpExecArray | null;
+  while ((match = combined.exec(content))) {
+    if (match.index > lastIndex) {
+      nodes.push(<span key={key++}>{renderWithBold(content.slice(lastIndex, match.index))}</span>);
+    }
+    const title = (match[1] ?? match[2])!;
+    const itemId = itemIdByTitle.get(title);
+    nodes.push(
+      <Link
+        key={key++}
+        href={`/items/${itemId}`}
+        className={`text-accent underline decoration-accent/40 underline-offset-2 hover:decoration-accent ${
+          match[1] ? "font-semibold" : ""
+        }`}
+      >
+        {title}
+      </Link>
+    );
+    lastIndex = combined.lastIndex;
+  }
+  if (lastIndex < content.length) {
+    nodes.push(<span key={key++}>{renderWithBold(content.slice(lastIndex))}</span>);
+  }
+  return nodes;
 }
 
 function ScopePill({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
@@ -117,20 +158,8 @@ export function KapsulSohbet({
                       : "border border-ink-border bg-ink-panel/60 text-bone"
                   }`}
                 >
-                  {renderWithBold(message.content)}
+                  {renderMessageContent(message.content, message.citations)}
                 </div>
-                {message.citations && message.citations.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 px-1">
-                    {message.citations.map((c) => (
-                      <span
-                        key={c.itemId}
-                        className="rounded-full border border-ink-border px-2 py-0.5 text-[10px] text-bone-muted/80"
-                      >
-                        📎 {c.itemTitle}
-                      </span>
-                    ))}
-                  </div>
-                )}
               </div>
             ))}
 
