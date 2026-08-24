@@ -78,6 +78,10 @@ export function ItemFilters({
   tags,
   activeTag,
   onTagChange,
+  onAiSearch,
+  aiSearchLoading = false,
+  aiSearchActive = false,
+  onClearAiSearch,
 }: {
   query: string;
   onQueryChange: (value: string) => void;
@@ -90,15 +94,47 @@ export function ItemFilters({
   tags: string[];
   activeTag: string | null;
   onTagChange: (tag: string | null) => void;
+  onAiSearch?: () => void;
+  aiSearchLoading?: boolean;
+  aiSearchActive?: boolean;
+  onClearAiSearch?: () => void;
 }) {
   return (
     <div className="flex flex-col gap-4">
-      <input
-        value={query}
-        onChange={(e) => onQueryChange(e.target.value)}
-        placeholder="Başlık ya da etikette ara…"
-        className="w-full rounded-full border border-ink-border bg-black/30 px-4 py-2.5 text-sm text-bone placeholder:text-bone-muted outline-none transition-colors focus:border-accent/60"
-      />
+      <div className="flex items-center gap-2">
+        <input
+          value={query}
+          onChange={(e) => onQueryChange(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && query.trim()) onAiSearch?.();
+          }}
+          placeholder="Başlık ya da etikette ara…"
+          className="w-full rounded-full border border-ink-border bg-black/30 px-4 py-2.5 text-sm text-bone placeholder:text-bone-muted outline-none transition-colors focus:border-accent/60"
+        />
+        {onAiSearch && (
+          <button
+            type="button"
+            onClick={() => onAiSearch()}
+            disabled={!query.trim() || aiSearchLoading}
+            className="shrink-0 rounded-full border border-accent/60 bg-accent/10 px-3.5 py-2.5 text-sm font-medium text-accent transition-all active:scale-[0.96] disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            {aiSearchLoading ? "Aranıyor…" : "AI ile ara"}
+          </button>
+        )}
+      </div>
+
+      {aiSearchActive && (
+        <div className="flex items-center gap-2 text-xs text-accent">
+          <span>AI arama sonuçları gösteriliyor</span>
+          <button
+            type="button"
+            onClick={() => onClearAiSearch?.()}
+            className="rounded-full border border-accent/40 px-2 py-0.5 text-bone-muted transition-colors hover:border-accent/60 hover:text-accent"
+          >
+            Temizle
+          </button>
+        </div>
+      )}
 
       {(types.length > 0 || statuses.length > 0) && (
         <div className="flex gap-2 overflow-x-auto scrollbar-none">

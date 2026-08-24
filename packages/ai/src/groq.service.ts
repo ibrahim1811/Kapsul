@@ -1,8 +1,9 @@
 import Groq from "groq-sdk";
-import type { AIAnalysisResult } from "@kapsul/types";
+import type { AIAnalysisResult, SearchableItem } from "@kapsul/types";
 import type { AIProvider } from "./ai-provider.interface";
 import { buildAnalyzeItemPrompt } from "./prompts/analyze-item.prompt";
 import { buildAnswerQuestionPrompt } from "./prompts/answer-question.prompt";
+import { buildSearchItemsPrompt } from "./prompts/search-items.prompt";
 
 // llama-3.3-70b-versatile Groq tarafından Ağustos 2026'da kaldırıldı; önerilen yerine geçen model kullanılıyor.
 const DEFAULT_MODEL = "openai/gpt-oss-120b";
@@ -89,5 +90,34 @@ export class GroqProvider implements AIProvider {
       completion.choices[0]?.message?.content ??
       "Kaydettiğin içeriklerde bu soruyu kesin olarak cevaplayacak yeterli bilgi bulamadım."
     );
+  }
+
+  async searchItems(query: string, items: SearchableItem[]): Promise<string[]> {
+    if (items.length === 0) return [];
+
+    const completion = await this.client.chat.completions.create({
+      model: DEFAULT_MODEL,
+      messages: [{ role: "user", content: buildSearchItemsPrompt(query, items) }],
+      response_format: { type: "json_object" },
+      temperature: 0.1,
+      max_completion_tokens: 2048,
+      reasoning_format: "hidden",
+    });
+
+    const raw = completion.choices[0]?.message?.content ?? "";
+    if (!raw) return [];
+
+    try {
+      const jsonStart = raw.indexOf("{");
+      const jsonEnd = raw.lastIndexOf("}");
+      const jsonSlice = jsonStart >= 0 && jsonEnd >= jsonStart ? raw.slice(jsonStart, jsonEnd + 1) : raw;
+      const parsed = JSON.parse(jsonSlice);
+      const matches: unknown = parsed.matches;
+      if (!Array.isArray(matches)) return [];
+      const validIds = new Set(items.map((item) => item.id));
+      return matches.filter((id): id is string => typeof id === "string" && validIds.has(id));
+    } catch {
+      return [];
+    }
   }
 }

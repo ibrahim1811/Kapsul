@@ -1,4 +1,4 @@
-import type { AIAnalysisResult } from "@kapsul/types";
+import type { AIAnalysisResult, SearchableItem } from "@kapsul/types";
 
 export type AIProvider = {
   analyzeContent(
@@ -7,4 +7,5 @@ export type AIProvider = {
     existingFolders?: string[]
   ): Promise<AIAnalysisResult>;
   answerQuestion(question: string, context: string): Promise<string>;
+  searchItems(query: string, items: SearchableItem[]): Promise<string[]>;
 };

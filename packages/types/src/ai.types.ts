@@ -15,3 +15,16 @@ export type AIAnalysisResult = {
 };
 
 export type AIProviderName = "groq";
+
+export type SearchableItem = {
+  id: string;
+  title: string;
+  summary?: string;
+  category?: string;
+  tags: string[];
+  people?: string[];
+  organizations?: string[];
+  locations?: string[];
+  amounts?: string[];
+  actionItems?: string[];
+};

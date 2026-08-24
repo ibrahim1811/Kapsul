@@ -1,4 +1,6 @@
 import { createRemoteJWKSet, jwtVerify } from "jose";
+import { GroqProvider } from "@kapsul/ai";
+import type { SearchableItem } from "@kapsul/types";
 import { FirestoreClient } from "./firestore";
 import { runItemPipeline } from "./pipeline";
 
@@ -45,11 +47,9 @@ export default {
     }
 
     const url = new URL(request.url);
-    const match = url.pathname.match(/^\/process\/([^/]+)$/);
-    if (!match || request.method !== "POST") {
+    if (request.method !== "POST") {
       return new Response("Not found", { status: 404, headers: cors });
     }
-    const itemId = match[1];
 
     const token = (request.headers.get("authorization") ?? "").replace(/^Bearer /, "");
     if (!token) {
@@ -63,22 +63,67 @@ export default {
       return new Response("Unauthorized", { status: 401, headers: cors });
     }
 
-    const firestore = new FirestoreClient(env.FIREBASE_PROJECT_ID, {
-      client_email: env.FIRESTORE_CLIENT_EMAIL,
-      private_key: env.FIRESTORE_PRIVATE_KEY.replace(/\\n/g, "\n"),
-    });
-
-    try {
-      await runItemPipeline(firestore, userId, itemId, env.BUCKET, env.GROQ_API_KEY);
-      return new Response(JSON.stringify({ ok: true }), {
-        status: 200,
-        headers: { ...cors, "Content-Type": "application/json" },
+    const processMatch = url.pathname.match(/^\/process\/([^/]+)$/);
+    if (processMatch) {
+      const itemId = processMatch[1];
+      const firestore = new FirestoreClient(env.FIREBASE_PROJECT_ID, {
+        client_email: env.FIRESTORE_CLIENT_EMAIL,
+        private_key: env.FIRESTORE_PRIVATE_KEY.replace(/\\n/g, "\n"),
       });
-    } catch (err) {
-      return new Response(
-        JSON.stringify({ ok: false, error: err instanceof Error ? err.message : "İşlem başarısız." }),
-        { status: 500, headers: { ...cors, "Content-Type": "application/json" } }
-      );
+
+      try {
+        await runItemPipeline(firestore, userId, itemId, env.BUCKET, env.GROQ_API_KEY);
+        return new Response(JSON.stringify({ ok: true }), {
+          status: 200,
+          headers: { ...cors, "Content-Type": "application/json" },
+        });
+      } catch (err) {
+        return new Response(
+          JSON.stringify({ ok: false, error: err instanceof Error ? err.message : "İşlem başarısız." }),
+          { status: 500, headers: { ...cors, "Content-Type": "application/json" } }
+        );
+      }
     }
+
+    if (url.pathname === "/search") {
+      return handleSearch(request, env, cors);
+    }
+
+    return new Response("Not found", { status: 404, headers: cors });
   },
 };
+
+async function handleSearch(request: Request, env: Env, cors: HeadersInit): Promise<Response> {
+  let body: { query?: unknown; items?: unknown };
+  try {
+    body = await request.json();
+  } catch {
+    return new Response(JSON.stringify({ ok: false, error: "Geçersiz istek gövdesi." }), {
+      status: 400,
+      headers: { ...cors, "Content-Type": "application/json" },
+    });
+  }
+
+  const query = typeof body.query === "string" ? body.query.trim() : "";
+  const items = Array.isArray(body.items) ? (body.items as SearchableItem[]).slice(0, 500) : [];
+
+  if (!query || items.length === 0) {
+    return new Response(JSON.stringify({ ok: true, matches: [] }), {
+      status: 200,
+      headers: { ...cors, "Content-Type": "application/json" },
+    });
+  }
+
+  try {
+    const matches = await new GroqProvider(env.GROQ_API_KEY).searchItems(query, items);
+    return new Response(JSON.stringify({ ok: true, matches }), {
+      status: 200,
+      headers: { ...cors, "Content-Type": "application/json" },
+    });
+  } catch (err) {
+    return new Response(
+      JSON.stringify({ ok: false, error: err instanceof Error ? err.message : "Arama başarısız." }),
+      { status: 500, headers: { ...cors, "Content-Type": "application/json" } }
+    );
+  }
+}

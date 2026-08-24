@@ -5,6 +5,7 @@ import { ItemFilters } from "@/components/item-filters";
 import { ProtectedRoute } from "@/components/protected-route";
 import { Sidebar } from "@/components/sidebar";
 import { UploadButton, UploadDropzone, UploadProgressList } from "@/components/upload-dropzone";
+import { searchItemsWithAI } from "@/lib/ai-worker";
 import { useAuth } from "@/lib/auth-context";
 import { createCollection } from "@/lib/collections";
 import { getFirebaseAuth } from "@/lib/firebase";
@@ -12,7 +13,7 @@ import { useCollections } from "@/lib/use-collections";
 import { useFileUpload } from "@/lib/use-file-upload";
 import { useGlobalDrop } from "@/lib/use-global-drop";
 import { useItems } from "@/lib/use-items";
-import type { Item } from "@kapsul/types";
+import type { Item, SearchableItem } from "@kapsul/types";
 import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
@@ -30,6 +31,46 @@ function Dashboard() {
   const [activeStatus, setActiveStatus] = useState<Item["processingStatus"] | null>(null);
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const [activeCollectionId, setActiveCollectionId] = useState<string | null>(null);
+  const [aiMatches, setAiMatches] = useState<string[] | null>(null);
+  const [aiSearchLoading, setAiSearchLoading] = useState(false);
+  const [aiSearchError, setAiSearchError] = useState<string | null>(null);
+
+  function handleQueryChange(value: string) {
+    setQuery(value);
+    setAiMatches(null);
+    setAiSearchError(null);
+  }
+
+  async function handleAiSearch() {
+    if (!query.trim()) return;
+    setAiSearchLoading(true);
+    setAiSearchError(null);
+    try {
+      const searchable: SearchableItem[] = scopedItems.map((item) => ({
+        id: item.id,
+        title: item.title,
+        summary: item.summary,
+        category: item.category,
+        tags: item.tags,
+        people: item.metadata?.people,
+        organizations: item.metadata?.organizations,
+        locations: item.metadata?.locations,
+        amounts: item.metadata?.amounts,
+        actionItems: item.metadata?.actionItems,
+      }));
+      const matches = await searchItemsWithAI(query, searchable);
+      setAiMatches(matches);
+    } catch (err) {
+      setAiSearchError(err instanceof Error ? err.message : "AI arama başarısız oldu.");
+    } finally {
+      setAiSearchLoading(false);
+    }
+  }
+
+  function handleClearAiSearch() {
+    setAiMatches(null);
+    setAiSearchError(null);
+  }
 
   const scopedItems = useMemo(
     () =>
@@ -54,17 +95,23 @@ function Dashboard() {
 
   const filteredItems = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return scopedItems.filter((item) => {
+    const base = aiMatches
+      ? aiMatches
+          .map((id) => scopedItems.find((item) => item.id === id))
+          .filter((item): item is Item => Boolean(item))
+      : scopedItems;
+    return base.filter((item) => {
       if (activeType && item.type !== activeType) return false;
       if (activeStatus && item.processingStatus !== activeStatus) return false;
       if (activeTag && !item.tags.includes(activeTag)) return false;
+      if (aiMatches) return true;
       if (!q) return true;
       return (
         item.title.toLowerCase().includes(q) ||
         item.tags.some((tag) => tag.toLowerCase().includes(q))
       );
     });
-  }, [scopedItems, query, activeType, activeStatus, activeTag]);
+  }, [scopedItems, query, activeType, activeStatus, activeTag, aiMatches]);
 
   const activeCollectionName = activeCollectionId
     ? collections.find((c) => c.id === activeCollectionId)?.name
@@ -131,7 +178,7 @@ function Dashboard() {
 
               <ItemFilters
                 query={query}
-                onQueryChange={setQuery}
+                onQueryChange={handleQueryChange}
                 types={availableTypes}
                 activeType={activeType}
                 onTypeChange={setActiveType}
@@ -141,7 +188,13 @@ function Dashboard() {
                 tags={availableTags}
                 activeTag={activeTag}
                 onTagChange={setActiveTag}
+                onAiSearch={handleAiSearch}
+                aiSearchLoading={aiSearchLoading}
+                aiSearchActive={aiMatches !== null}
+                onClearAiSearch={handleClearAiSearch}
               />
+
+              {aiSearchError && <p className="text-xs text-red-400">{aiSearchError}</p>}
 
               {loading ? (
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
