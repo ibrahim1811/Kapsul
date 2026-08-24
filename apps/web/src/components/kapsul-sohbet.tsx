@@ -9,6 +9,18 @@ const STAGE_LABEL: Record<"searching" | "answering", string> = {
   answering: "Cevap hazırlanıyor…",
 };
 
+function renderWithBold(text: string) {
+  return text.split(/(\*\*[^*]+\*\*)/g).map((part, i) =>
+    part.startsWith("**") && part.endsWith("**") ? (
+      <strong key={i} className="font-semibold text-bone">
+        {part.slice(2, -2)}
+      </strong>
+    ) : (
+      part
+    )
+  );
+}
+
 function ScopePill({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
   return (
     <button
@@ -105,7 +117,7 @@ export function KapsulSohbet({
                       : "border border-ink-border bg-ink-panel/60 text-bone"
                   }`}
                 >
-                  {message.content}
+                  {renderWithBold(message.content)}
                 </div>
                 {message.citations && message.citations.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 px-1">
