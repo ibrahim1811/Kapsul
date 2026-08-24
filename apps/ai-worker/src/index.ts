@@ -89,6 +89,10 @@ export default {
       return handleSearch(request, env, cors);
     }
 
+    if (url.pathname === "/ask") {
+      return handleAsk(request, env, cors);
+    }
+
     return new Response("Not found", { status: 404, headers: cors });
   },
 };
@@ -123,6 +127,43 @@ async function handleSearch(request: Request, env: Env, cors: HeadersInit): Prom
   } catch (err) {
     return new Response(
       JSON.stringify({ ok: false, error: err instanceof Error ? err.message : "Arama başarısız." }),
+      { status: 500, headers: { ...cors, "Content-Type": "application/json" } }
+    );
+  }
+}
+
+const MAX_ASK_CONTEXT_LENGTH = 24000;
+
+async function handleAsk(request: Request, env: Env, cors: HeadersInit): Promise<Response> {
+  let body: { question?: unknown; context?: unknown };
+  try {
+    body = await request.json();
+  } catch {
+    return new Response(JSON.stringify({ ok: false, error: "Geçersiz istek gövdesi." }), {
+      status: 400,
+      headers: { ...cors, "Content-Type": "application/json" },
+    });
+  }
+
+  const question = typeof body.question === "string" ? body.question.trim() : "";
+  const context = typeof body.context === "string" ? body.context.slice(0, MAX_ASK_CONTEXT_LENGTH) : "";
+
+  if (!question) {
+    return new Response(JSON.stringify({ ok: false, error: "Soru boş olamaz." }), {
+      status: 400,
+      headers: { ...cors, "Content-Type": "application/json" },
+    });
+  }
+
+  try {
+    const answer = await new GroqProvider(env.GROQ_API_KEY).answerQuestion(question, context);
+    return new Response(JSON.stringify({ ok: true, answer }), {
+      status: 200,
+      headers: { ...cors, "Content-Type": "application/json" },
+    });
+  } catch (err) {
+    return new Response(
+      JSON.stringify({ ok: false, error: err instanceof Error ? err.message : "Cevaplama başarısız." }),
       { status: 500, headers: { ...cors, "Content-Type": "application/json" } }
     );
   }

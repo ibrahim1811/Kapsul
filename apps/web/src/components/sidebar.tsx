@@ -12,6 +12,9 @@ export function Sidebar({
   activeCollectionId,
   onSelectCollection,
   onCreateCollection,
+  onRenameCollection,
+  onDeleteCollection,
+  onOpenAsk,
   onSignOut,
 }: {
   user: User;
@@ -19,16 +22,39 @@ export function Sidebar({
   activeCollectionId: string | null;
   onSelectCollection: (id: string | null) => void;
   onCreateCollection: (name: string) => void;
+  onRenameCollection: (id: string, name: string) => void;
+  onDeleteCollection: (id: string) => void;
+  onOpenAsk: () => void;
   onSignOut: () => void;
 }) {
   const [creating, setCreating] = useState(false);
   const [name, setName] = useState("");
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState("");
 
   function submitNewCollection() {
     const trimmed = name.trim();
     if (trimmed) onCreateCollection(trimmed);
     setName("");
     setCreating(false);
+  }
+
+  function startRename(c: Collection) {
+    setRenamingId(c.id);
+    setRenameValue(c.name);
+  }
+
+  function submitRename() {
+    if (!renamingId) return;
+    const trimmed = renameValue.trim();
+    if (trimmed) onRenameCollection(renamingId, trimmed);
+    setRenamingId(null);
+    setRenameValue("");
+  }
+
+  function handleDeleteCollection(c: Collection) {
+    if (!confirm(`"${c.name}" klasörünü silmek istediğine emin misin? Ögeler silinmez, sadece klasörden çıkarılır.`)) return;
+    onDeleteCollection(c.id);
   }
 
   const initial = (user.displayName || user.email || "?").charAt(0).toUpperCase();
@@ -63,6 +89,13 @@ export function Sidebar({
         >
           <span aria-hidden="true">⌂</span> Tüm Ögeler
         </button>
+        <button
+          type="button"
+          onClick={onOpenAsk}
+          className="relative flex items-center gap-2 rounded-xl px-2.5 py-1.5 text-left text-xs font-medium text-bone-muted transition-colors active:scale-[0.98] hover:bg-white/5 hover:text-bone"
+        >
+          <span aria-hidden="true">✦</span> Kapsül'e Sor
+        </button>
       </nav>
 
       <div className="flex flex-1 flex-col gap-1 overflow-y-auto">
@@ -72,20 +105,57 @@ export function Sidebar({
           </span>
         </div>
 
-        {collections.map((c) => (
-          <button
-            key={c.id}
-            type="button"
-            onClick={() => onSelectCollection(c.id)}
-            className={`relative flex items-center justify-between gap-2 rounded-xl px-2.5 py-1.5 text-left text-xs font-medium transition-colors active:scale-[0.98] ${
-              activeCollectionId === c.id
-                ? "bg-accent/15 text-accent before:absolute before:-left-3 before:top-1/2 before:h-3.5 before:w-0.5 before:-translate-y-1/2 before:rounded-full before:bg-accent"
-                : "text-bone-muted hover:bg-white/5 hover:text-bone"
-            }`}
-          >
-            <span className="truncate">📁 {c.name}</span>
-          </button>
-        ))}
+        {collections.map((c) =>
+          renamingId === c.id ? (
+            <input
+              key={c.id}
+              autoFocus
+              value={renameValue}
+              onChange={(e) => setRenameValue(e.target.value)}
+              onBlur={submitRename}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") submitRename();
+                if (e.key === "Escape") setRenamingId(null);
+              }}
+              className="mx-0.5 rounded-xl border border-accent/40 bg-black/30 px-2.5 py-1.5 text-xs text-bone outline-none"
+            />
+          ) : (
+            <div
+              key={c.id}
+              className={`group relative flex items-center justify-between gap-2 rounded-xl px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                activeCollectionId === c.id
+                  ? "bg-accent/15 text-accent before:absolute before:-left-3 before:top-1/2 before:h-3.5 before:w-0.5 before:-translate-y-1/2 before:rounded-full before:bg-accent"
+                  : "text-bone-muted hover:bg-white/5 hover:text-bone"
+              }`}
+            >
+              <button
+                type="button"
+                onClick={() => onSelectCollection(c.id)}
+                className="min-w-0 flex-1 truncate text-left active:scale-[0.98]"
+              >
+                📁 {c.name}
+              </button>
+              <span className="hidden shrink-0 items-center gap-1 group-hover:flex">
+                <button
+                  type="button"
+                  onClick={() => startRename(c)}
+                  aria-label="Yeniden adlandır"
+                  className="rounded-md px-1 text-bone-muted/70 transition-colors hover:text-bone active:scale-[0.9]"
+                >
+                  ✎
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleDeleteCollection(c)}
+                  aria-label="Sil"
+                  className="rounded-md px-1 text-bone-muted/70 transition-colors hover:text-red-400 active:scale-[0.9]"
+                >
+                  ✕
+                </button>
+              </span>
+            </div>
+          )
+        )}
 
         {creating ? (
           <input

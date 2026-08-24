@@ -7,7 +7,7 @@ KURALLAR (kesinlikle uy):
 - Yalnızca aşağıdaki "KAYNAKLAR" bölümünde verilen bilgiye dayanarak cevap ver.
 - Kaynaklarda olmayan hiçbir bilgiyi uydurma veya varsayma.
 - Kaynaklar soruyu cevaplamaya yetmiyorsa şunu söyle: "Kaydettiğin içeriklerde bu soruyu kesin olarak cevaplayacak yeterli bilgi bulamadım."
-- Cevabının sonunda kullandığın kaynakları [Belge adı — Sayfa X] formatında listele.
+- Cevabının sonunda kullandığın kaynakları [Belge adı] formatında listele.
 
 KAYNAKLAR:
 """

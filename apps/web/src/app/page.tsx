@@ -2,12 +2,13 @@
 
 import { ItemCard } from "@/components/item-card";
 import { ItemFilters } from "@/components/item-filters";
+import { KapsulSohbet } from "@/components/kapsul-sohbet";
 import { ProtectedRoute } from "@/components/protected-route";
 import { Sidebar } from "@/components/sidebar";
 import { UploadButton, UploadDropzone, UploadProgressList } from "@/components/upload-dropzone";
 import { searchItemsWithAI } from "@/lib/ai-worker";
 import { useAuth } from "@/lib/auth-context";
-import { createCollection } from "@/lib/collections";
+import { createCollection, deleteCollection, renameCollection } from "@/lib/collections";
 import { getFirebaseAuth } from "@/lib/firebase";
 import { useCollections } from "@/lib/use-collections";
 import { useFileUpload } from "@/lib/use-file-upload";
@@ -34,6 +35,7 @@ function Dashboard() {
   const [aiMatches, setAiMatches] = useState<string[] | null>(null);
   const [aiSearchLoading, setAiSearchLoading] = useState(false);
   const [aiSearchError, setAiSearchError] = useState<string | null>(null);
+  const [askOpen, setAskOpen] = useState(false);
 
   function handleQueryChange(value: string) {
     setQuery(value);
@@ -138,6 +140,12 @@ function Dashboard() {
         activeCollectionId={activeCollectionId}
         onSelectCollection={setActiveCollectionId}
         onCreateCollection={(name) => createCollection(user.uid, name)}
+        onRenameCollection={(id, name) => renameCollection(user.uid, id, name)}
+        onDeleteCollection={(id) => {
+          if (activeCollectionId === id) setActiveCollectionId(null);
+          deleteCollection(user.uid, id);
+        }}
+        onOpenAsk={() => setAskOpen(true)}
         onSignOut={handleSignOut}
       />
 
@@ -224,6 +232,14 @@ function Dashboard() {
           </div>
         )}
       </main>
+
+      <KapsulSohbet
+        open={askOpen}
+        onClose={() => setAskOpen(false)}
+        userId={user.uid}
+        items={items}
+        collections={collections}
+      />
     </div>
   );
 }
