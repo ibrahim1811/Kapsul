@@ -1,4 +1,4 @@
-import Groq from "groq-sdk";
+import Groq, { RateLimitError } from "groq-sdk";
 import type { AIAnalysisResult, SearchableItem } from "@kapsul/types";
 import type { AIProvider } from "./ai-provider.interface";
 import { buildAnalyzeItemPrompt } from "./prompts/analyze-item.prompt";
@@ -50,6 +50,22 @@ function parseAnalysisJson(raw: string): AIAnalysisResult {
   }
 }
 
+const MAX_RATE_LIMIT_RETRIES = 2;
+const DEFAULT_RETRY_WAIT_SECONDS = 10;
+
+async function withRateLimitRetry<T>(fn: () => Promise<T>): Promise<T> {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      if (!(err instanceof RateLimitError) || attempt >= MAX_RATE_LIMIT_RETRIES) throw err;
+      const retryAfterHeader = err.headers?.get("retry-after");
+      const waitSeconds = retryAfterHeader ? Number(retryAfterHeader) : DEFAULT_RETRY_WAIT_SECONDS;
+      await new Promise((resolve) => setTimeout(resolve, Math.max(waitSeconds, 1) * 1000));
+    }
+  }
+}
+
 export class GroqProvider implements AIProvider {
   private client: Groq;
 
@@ -63,16 +79,18 @@ export class GroqProvider implements AIProvider {
     existingTags: string[] = [],
     existingFolders: string[] = []
   ): Promise<AIAnalysisResult> {
-    const completion = await this.client.chat.completions.create({
-      model: DEFAULT_MODEL,
-      messages: [
-        { role: "user", content: buildAnalyzeItemPrompt(text, existingTags, existingFolders) },
-      ],
-      response_format: { type: "json_object" },
-      temperature: 0.2,
-      max_completion_tokens: 4096,
-      reasoning_format: "hidden",
-    });
+    const completion = await withRateLimitRetry(() =>
+      this.client.chat.completions.create({
+        model: DEFAULT_MODEL,
+        messages: [
+          { role: "user", content: buildAnalyzeItemPrompt(text, existingTags, existingFolders) },
+        ],
+        response_format: { type: "json_object" },
+        temperature: 0.2,
+        max_completion_tokens: 4096,
+        reasoning_format: "hidden",
+      })
+    );
 
     const raw = completion.choices[0]?.message?.content ?? "";
     if (!raw) return { ...EMPTY_ANALYSIS };
@@ -80,11 +98,13 @@ export class GroqProvider implements AIProvider {
   }
 
   async answerQuestion(question: string, context: string): Promise<string> {
-    const completion = await this.client.chat.completions.create({
-      model: DEFAULT_MODEL,
-      messages: [{ role: "user", content: buildAnswerQuestionPrompt(question, context) }],
-      temperature: 0.1,
-    });
+    const completion = await withRateLimitRetry(() =>
+      this.client.chat.completions.create({
+        model: DEFAULT_MODEL,
+        messages: [{ role: "user", content: buildAnswerQuestionPrompt(question, context) }],
+        temperature: 0.1,
+      })
+    );
 
     return (
       completion.choices[0]?.message?.content ??
@@ -95,14 +115,16 @@ export class GroqProvider implements AIProvider {
   async searchItems(query: string, items: SearchableItem[]): Promise<string[]> {
     if (items.length === 0) return [];
 
-    const completion = await this.client.chat.completions.create({
-      model: DEFAULT_MODEL,
-      messages: [{ role: "user", content: buildSearchItemsPrompt(query, items) }],
-      response_format: { type: "json_object" },
-      temperature: 0.1,
-      max_completion_tokens: 2048,
-      reasoning_format: "hidden",
-    });
+    const completion = await withRateLimitRetry(() =>
+      this.client.chat.completions.create({
+        model: DEFAULT_MODEL,
+        messages: [{ role: "user", content: buildSearchItemsPrompt(query, items) }],
+        response_format: { type: "json_object" },
+        temperature: 0.1,
+        max_completion_tokens: 2048,
+        reasoning_format: "hidden",
+      })
+    );
 
     const raw = completion.choices[0]?.message?.content ?? "";
     if (!raw) return [];

@@ -1,6 +1,7 @@
 "use client";
 
 import { ProtectedRoute } from "@/components/protected-route";
+import { triggerItemProcessing } from "@/lib/ai-worker";
 import { useAuth } from "@/lib/auth-context";
 import { moveItemToCollection } from "@/lib/collections";
 import { formatFileSize, formatRelativeDate, isLikelyGarbledText } from "@/lib/format";
@@ -52,6 +53,7 @@ function ItemDetail({ itemId }: { itemId: string }) {
   const [movingFolder, setMovingFolder] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewError, setPreviewError] = useState(false);
+  const [retrying, setRetrying] = useState(false);
 
   useEffect(() => {
     if (item) {
@@ -150,6 +152,15 @@ function ItemDetail({ itemId }: { itemId: string }) {
     }
   }
 
+  async function handleRetry() {
+    setRetrying(true);
+    try {
+      await triggerItemProcessing(itemId);
+    } finally {
+      setRetrying(false);
+    }
+  }
+
   return (
     <main className="relative min-h-screen bg-ink">
       <div className="pointer-events-none absolute inset-0 h-[320px] bg-radial-glow" />
@@ -234,10 +245,20 @@ function ItemDetail({ itemId }: { itemId: string }) {
           </div>
 
           {(item.processingStatus === "failed" || item.aiStatus === "failed") && item.processingError && (
-            <p className="mt-3 rounded-2xl border border-red-500/20 bg-red-500/5 px-3 py-2 text-xs text-red-400">
-              {item.aiStatus === "failed" && item.processingStatus !== "failed" ? "AI analizi başarısız: " : ""}
-              {item.processingError}
-            </p>
+            <div className="mt-3 rounded-2xl border border-red-500/20 bg-red-500/5 px-3 py-2 text-xs text-red-400">
+              <p>
+                {item.aiStatus === "failed" && item.processingStatus !== "failed" ? "AI analizi başarısız: " : ""}
+                {item.processingError}
+              </p>
+              <button
+                type="button"
+                onClick={handleRetry}
+                disabled={retrying}
+                className="mt-1.5 rounded-full border border-red-500/30 px-2.5 py-1 text-red-300 transition-colors hover:border-red-500/60 active:scale-[0.96] disabled:opacity-50"
+              >
+                {retrying ? "Yeniden deneniyor…" : "Yeniden Dene"}
+              </button>
+            </div>
           )}
 
           {item.tags.length > 0 && (
