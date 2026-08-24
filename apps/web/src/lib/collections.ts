@@ -66,3 +66,19 @@ export async function moveItemToCollection(
     updatedAt: serverTimestamp(),
   });
 }
+
+export async function moveItemsToCollection(
+  userId: string,
+  itemIds: string[],
+  collectionId: string | null
+): Promise<void> {
+  const firestore = getFirebaseFirestore();
+  const batch = writeBatch(firestore);
+  for (const itemId of itemIds) {
+    batch.update(doc(firestore, itemsCollectionPath(userId), itemId), {
+      collectionIds: collectionId ? [collectionId] : [],
+      updatedAt: serverTimestamp(),
+    });
+  }
+  await batch.commit();
+}

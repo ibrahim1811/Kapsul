@@ -8,8 +8,9 @@ import { Sidebar } from "@/components/sidebar";
 import { UploadButton, UploadDropzone, UploadProgressList } from "@/components/upload-dropzone";
 import { searchItemsWithAI } from "@/lib/ai-worker";
 import { useAuth } from "@/lib/auth-context";
-import { createCollection, deleteCollection, renameCollection } from "@/lib/collections";
+import { createCollection, deleteCollection, moveItemsToCollection, renameCollection } from "@/lib/collections";
 import { getFirebaseAuth } from "@/lib/firebase";
+import { deleteItems } from "@/lib/items";
 import { useCollections } from "@/lib/use-collections";
 import { useFileUpload } from "@/lib/use-file-upload";
 import { useGlobalDrop } from "@/lib/use-global-drop";
@@ -36,6 +37,9 @@ function Dashboard() {
   const [aiSearchLoading, setAiSearchLoading] = useState(false);
   const [aiSearchError, setAiSearchError] = useState<string | null>(null);
   const [askOpen, setAskOpen] = useState(false);
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
 
   function handleQueryChange(value: string) {
     setQuery(value);
@@ -130,6 +134,46 @@ function Dashboard() {
     handleFiles(files, collectionId);
   }
 
+  function toggleSelectMode() {
+    setSelectMode((prev) => !prev);
+    setSelectedIds(new Set());
+  }
+
+  function toggleItemSelected(itemId: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(itemId)) next.delete(itemId);
+      else next.add(itemId);
+      return next;
+    });
+  }
+
+  async function handleBulkMove(collectionId: string | null) {
+    if (!user || selectedIds.size === 0) return;
+    setBulkBusy(true);
+    try {
+      await moveItemsToCollection(user.uid, Array.from(selectedIds), collectionId);
+      setSelectMode(false);
+      setSelectedIds(new Set());
+    } finally {
+      setBulkBusy(false);
+    }
+  }
+
+  async function handleBulkDelete() {
+    if (!user || selectedIds.size === 0) return;
+    if (!window.confirm(`${selectedIds.size} öge kalıcı olarak silinsin mi?`)) return;
+    setBulkBusy(true);
+    try {
+      const targets = items.filter((item) => selectedIds.has(item.id));
+      await deleteItems(user.uid, targets);
+      setSelectMode(false);
+      setSelectedIds(new Set());
+    } finally {
+      setBulkBusy(false);
+    }
+  }
+
   if (!user) return null;
 
   return (
@@ -177,7 +221,20 @@ function Dashboard() {
                       {loading ? "Yükleniyor…" : `${scopedItems.length} öge`}
                     </p>
                   </div>
-                  <UploadButton onFiles={handleFiles} onFolderFiles={handleFolderFiles} />
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={toggleSelectMode}
+                      className={`rounded-full border px-3.5 py-2 text-sm font-medium transition-all active:scale-[0.96] ${
+                        selectMode
+                          ? "border-accent/60 bg-accent/15 text-accent"
+                          : "border-ink-border text-bone-muted hover:border-white/30 hover:text-bone"
+                      }`}
+                    >
+                      {selectMode ? "Vazgeç" : "Seç"}
+                    </button>
+                    <UploadButton onFiles={handleFiles} onFolderFiles={handleFolderFiles} />
+                  </div>
                 </div>
                 <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
               </div>
@@ -218,13 +275,64 @@ function Dashboard() {
               ) : (
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
                   {filteredItems.map((item, index) => (
-                    <ItemCard key={item.id} item={item} index={index} />
+                    <ItemCard
+                      key={item.id}
+                      item={item}
+                      index={index}
+                      selectable={selectMode}
+                      selected={selectedIds.has(item.id)}
+                      onToggleSelect={toggleItemSelected}
+                    />
                   ))}
                 </div>
               )}
             </>
           )}
         </div>
+
+        {selectMode && selectedIds.size > 0 && (
+          <div className="fixed inset-x-0 bottom-6 z-40 flex justify-center px-4">
+            <div className="flex flex-wrap items-center gap-2.5 rounded-2xl border border-ink-border bg-ink-panel/95 px-4 py-3 shadow-card backdrop-blur-sm">
+              <span className="text-sm font-medium text-bone">{selectedIds.size} öge seçildi</span>
+              <select
+                disabled={bulkBusy}
+                defaultValue=""
+                onChange={(e) => {
+                  const value = e.target.value;
+                  handleBulkMove(value === "__none__" ? null : value || null);
+                  e.target.value = "";
+                }}
+                className="rounded-full border border-ink-border bg-black/30 px-3 py-1.5 text-xs text-bone outline-none disabled:opacity-60"
+              >
+                <option value="" disabled>
+                  Klasöre taşı…
+                </option>
+                <option value="__none__">Klasörden çıkar</option>
+                {collections.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={handleBulkDelete}
+                disabled={bulkBusy}
+                className="rounded-full border border-red-500/40 bg-red-500/10 px-3.5 py-1.5 text-xs font-medium text-red-400 transition-all active:scale-[0.96] disabled:opacity-60"
+              >
+                Sil
+              </button>
+              <button
+                type="button"
+                onClick={toggleSelectMode}
+                disabled={bulkBusy}
+                className="rounded-full px-3 py-1.5 text-xs text-bone-muted hover:text-bone disabled:opacity-60"
+              >
+                Vazgeç
+              </button>
+            </div>
+          </div>
+        )}
 
         {dragging && (
           <div className="pointer-events-none fixed inset-0 z-50 flex animate-fade-in-scale items-center justify-center border-4 border-dashed border-accent bg-ink/80 backdrop-blur-sm">

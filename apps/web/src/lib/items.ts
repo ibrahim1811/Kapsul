@@ -77,3 +77,7 @@ export async function deleteItem(
   }
   await deleteDoc(doc(getFirebaseFirestore(), itemsCollectionPath(userId), itemId));
 }
+
+export async function deleteItems(userId: string, items: Pick<Item, "id" | "originalFileName">[]): Promise<void> {
+  await Promise.all(items.map((item) => deleteItem(userId, item.id, item.originalFileName)));
+}

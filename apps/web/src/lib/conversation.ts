@@ -3,34 +3,68 @@
 import { askKapsul, searchItemsWithAI } from "@/lib/ai-worker";
 import { getFirebaseFirestore } from "@/lib/firebase";
 import { conversationsCollectionPath, messagesCollectionPath } from "@kapsul/api";
-import type { Citation, Item, Message, SearchableItem } from "@kapsul/types";
-import { collection, doc, limit, onSnapshot, orderBy, query, serverTimestamp, setDoc } from "firebase/firestore";
+import type { Citation, Conversation, Item, Message, SearchableItem } from "@kapsul/types";
+import {
+  collection,
+  doc,
+  getDocs,
+  onSnapshot,
+  orderBy,
+  query,
+  serverTimestamp,
+  setDoc,
+  updateDoc,
+  writeBatch,
+} from "firebase/firestore";
 import { useEffect, useState } from "react";
 
 const CONTEXT_ITEM_LIMIT = 5;
 const CONTEXT_CHAR_LIMIT_PER_ITEM = 6000;
+const TITLE_CHAR_LIMIT = 60;
 const FALLBACK_ANSWER = "Kaydettiğin içeriklerde bu soruyu kesin olarak cevaplayacak yeterli bilgi bulamadım.";
 
 export type AskStage = "idle" | "searching" | "answering";
 
-export function useKapsulSohbet(userId: string | undefined) {
-  const [conversationId, setConversationId] = useState<string | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [stage, setStage] = useState<AskStage>("idle");
-  const [error, setError] = useState<string | null>(null);
+export function useConversations(userId: string | undefined) {
+  const [conversations, setConversations] = useState<Conversation[]>([]);
 
   useEffect(() => {
-    if (!userId) return;
+    if (!userId) {
+      setConversations([]);
+      return;
+    }
     const q = query(
       collection(getFirebaseFirestore(), conversationsCollectionPath(userId)),
-      orderBy("createdAt", "asc"),
-      limit(1)
+      orderBy("updatedAt", "desc")
     );
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      setConversationId(snapshot.docs[0]?.id ?? null);
+      setConversations(snapshot.docs.map((d) => d.data() as Conversation));
     });
     return unsubscribe;
   }, [userId]);
+
+  return conversations;
+}
+
+export async function deleteConversation(userId: string, conversationId: string): Promise<void> {
+  const firestore = getFirebaseFirestore();
+  const messages = await getDocs(collection(firestore, messagesCollectionPath(userId, conversationId)));
+  const batch = writeBatch(firestore);
+  for (const messageDoc of messages.docs) {
+    batch.delete(messageDoc.ref);
+  }
+  batch.delete(doc(firestore, conversationsCollectionPath(userId), conversationId));
+  await batch.commit();
+}
+
+export function useKapsulSohbet(
+  userId: string | undefined,
+  conversationId: string | null,
+  onConversationCreated: (conversationId: string) => void
+) {
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [stage, setStage] = useState<AskStage>("idle");
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!userId || !conversationId) {
@@ -47,28 +81,30 @@ export function useKapsulSohbet(userId: string | undefined) {
     return unsubscribe;
   }, [userId, conversationId]);
 
-  async function ensureConversation(uid: string): Promise<string> {
-    if (conversationId) return conversationId;
-    const firestore = getFirebaseFirestore();
-    const ref = doc(collection(firestore, conversationsCollectionPath(uid)));
-    await setDoc(ref, {
-      id: ref.id,
-      userId: uid,
-      title: "Kapsül'e Sor",
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    });
-    setConversationId(ref.id);
-    return ref.id;
-  }
-
   async function sendMessage(question: string, scopedItems: Item[]) {
     const trimmed = question.trim();
     if (!userId || !trimmed) return;
     setError(null);
 
-    const convId = await ensureConversation(userId);
     const firestore = getFirebaseFirestore();
+    let convId = conversationId;
+
+    if (!convId) {
+      const ref = doc(collection(firestore, conversationsCollectionPath(userId)));
+      await setDoc(ref, {
+        id: ref.id,
+        userId,
+        title: trimmed.slice(0, TITLE_CHAR_LIMIT),
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+      convId = ref.id;
+      onConversationCreated(convId);
+    } else {
+      await updateDoc(doc(firestore, conversationsCollectionPath(userId), convId), {
+        updatedAt: serverTimestamp(),
+      });
+    }
 
     const userMsgRef = doc(collection(firestore, messagesCollectionPath(userId, convId)));
     await setDoc(userMsgRef, {

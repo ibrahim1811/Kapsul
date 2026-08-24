@@ -1,7 +1,8 @@
 "use client";
 
-import { useKapsulSohbet } from "@/lib/conversation";
-import type { Citation, Collection, Item } from "@kapsul/types";
+import { deleteConversation, useConversations, useKapsulSohbet } from "@/lib/conversation";
+import { formatRelativeDate } from "@/lib/format";
+import type { Citation, Collection, Conversation, Item } from "@kapsul/types";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -78,6 +79,77 @@ function ScopePill({ label, active, onClick }: { label: string; active: boolean;
   );
 }
 
+function ConversationRail({
+  userId,
+  conversations,
+  activeConversationId,
+  onSelect,
+  onNew,
+}: {
+  userId: string;
+  conversations: Conversation[];
+  activeConversationId: string | null;
+  onSelect: (id: string) => void;
+  onNew: () => void;
+}) {
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  async function handleDelete(id: string) {
+    if (!window.confirm("Bu sohbet silinsin mi?")) return;
+    setDeletingId(id);
+    try {
+      await deleteConversation(userId, id);
+      if (activeConversationId === id) onNew();
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
+  return (
+    <>
+      <div className="px-3 pt-3">
+        <button
+          type="button"
+          onClick={onNew}
+          className="w-full rounded-xl border border-accent/40 bg-accent/10 px-3 py-2 text-xs font-medium text-accent transition-all active:scale-[0.97] hover:bg-accent/15"
+        >
+          + Yeni Soru
+        </button>
+      </div>
+      <div className="mt-2 flex-1 overflow-y-auto px-2 pb-3">
+        {conversations.length === 0 ? (
+          <p className="px-2 py-4 text-center text-[11px] text-bone-muted">Henüz sohbet yok.</p>
+        ) : (
+          <div className="flex flex-col gap-0.5">
+            {conversations.map((c) => (
+              <div
+                key={c.id}
+                className={`group flex items-center gap-1 rounded-lg px-2 py-2 text-left transition-colors ${
+                  c.id === activeConversationId ? "bg-accent/10 text-bone" : "text-bone-muted hover:bg-white/5"
+                }`}
+              >
+                <button type="button" onClick={() => onSelect(c.id)} className="flex-1 overflow-hidden text-left">
+                  <p className="truncate text-xs font-medium">{c.title || "Kapsül'e Sor"}</p>
+                  <p className="mt-0.5 text-[10px] text-bone-muted/70">{formatRelativeDate(c.updatedAt)}</p>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleDelete(c.id)}
+                  disabled={deletingId === c.id}
+                  aria-label="Sohbeti sil"
+                  className="shrink-0 rounded-md px-1.5 py-1 text-xs text-bone-muted opacity-0 transition-opacity hover:text-red-400 group-hover:opacity-100 disabled:opacity-60"
+                >
+                  🗑
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
 export function KapsulSohbet({
   open,
   onClose,
@@ -93,7 +165,14 @@ export function KapsulSohbet({
 }) {
   const [scopeId, setScopeId] = useState<string | null>(null);
   const [input, setInput] = useState("");
-  const { messages, stage, error, sendMessage } = useKapsulSohbet(userId);
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [autoSelected, setAutoSelected] = useState(false);
+  const [mobileListOpen, setMobileListOpen] = useState(false);
+  const conversations = useConversations(userId);
+  const { messages, stage, error, sendMessage } = useKapsulSohbet(userId, conversationId, (id) => {
+    setConversationId(id);
+    setAutoSelected(true);
+  });
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const scopedItems = useMemo(
@@ -105,7 +184,31 @@ export function KapsulSohbet({
     if (open) bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [open, messages, stage]);
 
+  useEffect(() => {
+    if (!open) {
+      setAutoSelected(false);
+      return;
+    }
+    const mostRecent = conversations[0];
+    if (!autoSelected && conversationId === null && mostRecent) {
+      setConversationId(mostRecent.id);
+      setAutoSelected(true);
+    }
+  }, [open, conversations, conversationId, autoSelected]);
+
   if (!open) return null;
+
+  function handleNewConversation() {
+    setConversationId(null);
+    setAutoSelected(true);
+    setMobileListOpen(false);
+  }
+
+  function handleSelectConversation(id: string) {
+    setConversationId(id);
+    setAutoSelected(true);
+    setMobileListOpen(false);
+  }
 
   function handleSend() {
     const trimmed = input.trim();
@@ -118,9 +221,19 @@ export function KapsulSohbet({
     <div className="fixed inset-0 z-50 flex justify-end">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
-      <div className="relative flex h-full w-full max-w-md animate-slide-in-right flex-col border-l border-ink-border bg-ink-soft">
+      <div className="relative flex h-full w-full max-w-3xl animate-slide-in-right flex-col border-l border-ink-border bg-ink-soft">
         <div className="flex items-center justify-between border-b border-ink-border px-4 py-3.5">
-          <h2 className="text-sm font-semibold text-bone">✦ Kapsül'e Sor</h2>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setMobileListOpen((v) => !v)}
+              aria-label="Sohbetler"
+              className="rounded-lg px-2 py-1 text-bone-muted transition-colors hover:text-bone active:scale-[0.9] sm:hidden"
+            >
+              ☰
+            </button>
+            <h2 className="text-sm font-semibold text-bone">✦ Kapsül'e Sor</h2>
+          </div>
           <button
             type="button"
             onClick={onClose}
@@ -131,14 +244,40 @@ export function KapsulSohbet({
           </button>
         </div>
 
-        <div className="flex gap-2 overflow-x-auto scrollbar-none border-b border-ink-border px-4 py-3">
-          <ScopePill label="Hepsi" active={scopeId === null} onClick={() => setScopeId(null)} />
-          {collections.map((c) => (
-            <ScopePill key={c.id} label={c.name} active={scopeId === c.id} onClick={() => setScopeId(c.id)} />
-          ))}
-        </div>
+        <div className="relative flex flex-1 overflow-hidden">
+          {userId && (
+            <aside className="hidden w-56 shrink-0 flex-col border-r border-ink-border sm:flex">
+              <ConversationRail
+                userId={userId}
+                conversations={conversations}
+                activeConversationId={conversationId}
+                onSelect={handleSelectConversation}
+                onNew={handleNewConversation}
+              />
+            </aside>
+          )}
 
-        <div className="flex-1 overflow-y-auto px-4 py-4">
+          {userId && mobileListOpen && (
+            <div className="absolute inset-0 z-10 flex flex-col bg-ink-soft sm:hidden">
+              <ConversationRail
+                userId={userId}
+                conversations={conversations}
+                activeConversationId={conversationId}
+                onSelect={handleSelectConversation}
+                onNew={handleNewConversation}
+              />
+            </div>
+          )}
+
+          <div className="flex flex-1 flex-col overflow-hidden">
+            <div className="flex gap-2 overflow-x-auto scrollbar-none border-b border-ink-border px-4 py-3">
+              <ScopePill label="Hepsi" active={scopeId === null} onClick={() => setScopeId(null)} />
+              {collections.map((c) => (
+                <ScopePill key={c.id} label={c.name} active={scopeId === c.id} onClick={() => setScopeId(c.id)} />
+              ))}
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-4 py-4">
           {messages.length === 0 && stage === "idle" && (
             <p className="mt-6 text-center text-sm text-bone-muted">
               Kapsülündeki her şeye soru sorabilirsin — "kira sözleşmemde depozito ne kadardı?" gibi.
@@ -200,6 +339,8 @@ export function KapsulSohbet({
           >
             Gönder
           </button>
+        </div>
+          </div>
         </div>
       </div>
     </div>
